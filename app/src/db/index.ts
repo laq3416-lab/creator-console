@@ -12,6 +12,7 @@ const SCHEMA_FILE = path.join(process.cwd(), 'src', 'db', 'schema.sql');
 function createDb() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const sqlite = new Database(DB_FILE_PATH);
+  sqlite.pragma('busy_timeout = 10000');
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
 

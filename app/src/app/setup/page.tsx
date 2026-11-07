@@ -92,7 +92,7 @@ export default function SetupPage() {
       <div className="card" style={{ padding: 22, marginBottom: 14 }}>
         <div style={{ fontSize: 18, fontWeight: 680 }}>首次配置</div>
         <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 6, lineHeight: 1.7 }}>
-          四步走完就能用。你的数据、登录态、API Key 全部只存在这台电脑上
+          四步走完就能用。数据和登录态保存在本机；启用 AI 时相关账号和作品数据会发送给模型服务商。
           （<code>{status.dataDir}</code>），不会上传到任何服务器。
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 10 }}>

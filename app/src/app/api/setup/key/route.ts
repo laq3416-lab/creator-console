@@ -25,7 +25,8 @@ export async function POST(req: Request) {
   if (!lines.some((l) => l.startsWith('DEEPSEEK_BASE_URL='))) {
     lines.push('DEEPSEEK_BASE_URL=https://api.deepseek.com');
   }
-  fs.writeFileSync(envFile, lines.filter((l) => l !== undefined).join('\n'));
+  fs.writeFileSync(envFile, lines.filter((l) => l !== undefined).join('\n'), { mode: 0o600 });
+  fs.chmodSync(envFile, 0o600);
 
   process.env.DEEPSEEK_API_KEY = key;
 

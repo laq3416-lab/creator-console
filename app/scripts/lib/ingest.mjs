@@ -11,6 +11,7 @@ import { DB_FILE } from './paths.mjs';
 export function openDb(dbFile = DB_FILE) {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new Database(dbFile);
+  db.pragma('busy_timeout = 10000');
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   const schema = path.join(process.cwd(), 'src', 'db', 'schema.sql');

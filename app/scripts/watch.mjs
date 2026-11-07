@@ -15,7 +15,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openDb } from './lib/ingest.mjs';
-import { WATCHER_FILE, hasDouyinLogin } from './lib/paths.mjs';
+import { WATCHER_FILE, hasLogin } from './lib/paths.mjs';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -23,6 +23,7 @@ const HOUR = 60 * MIN;
 const TASKS = [
   {
     key: 'collect',
+    platform: 'douyin',
     label: '采集自己的数据',
     script: 'scripts/collect-douyin.mjs',
     every: Number(process.env.WATCH_COLLECT_MIN ?? 30) * MIN,
@@ -90,6 +91,7 @@ const TASKS = [
   },
   {
     key: 'radar',
+    platform: 'douyin',
     label: '扫同赛道爆款',
     script: 'scripts/collect-radar.mjs',
     every: Number(process.env.WATCH_RADAR_HOURS ?? 6) * HOUR,
@@ -108,6 +110,7 @@ const TASKS = [
     script: 'scripts/prune.mjs',
     every: 24 * HOUR,
     needsBrowser: false,
+    enabled: process.env.WATCH_PRUNE === '1',
   },
   {
     key: 'analyze',
@@ -202,11 +205,10 @@ async function tick() {
   if (running) return;
   running = true;
   try {
-    const loggedIn = await hasDouyinLogin();
     for (const task of TASKS) {
-      if (!isDue(task)) continue;
+      if (task.enabled === false || !isDue(task)) continue;
       // 需要浏览器的任务，没登录就跳过，别每 30 分钟弹一次窗口
-      if (task.needsBrowser && !loggedIn) continue;
+      if (task.needsBrowser && !(await hasLogin(task.platform))) continue;
       beat('running:' + task.key);
       console.log(`▶ ${task.label}`);
       await runTask(task);

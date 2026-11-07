@@ -33,8 +33,9 @@ export async function POST() {
   });
   child.unref();
 
-  child.on('exit', () => {
-    spawn(process.execPath, [path.join(process.cwd(), 'scripts', 'run-rules.mjs')], {
+  child.on('error', () => { running = false; });
+  child.on('exit', (code) => {
+    if (code === 0) spawn(process.execPath, [path.join(process.cwd(), 'scripts', 'run-rules.mjs')], {
       cwd: process.cwd(),
       stdio: 'ignore',
     });
