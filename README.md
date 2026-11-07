@@ -5,6 +5,8 @@
 
 数据全部留在你自己电脑上，不上传任何服务器。
 
+[**⬇ 下载 v0.1.0**](https://github.com/laq3416-lab/creator-console/releases/latest/download/creator-console-v0.1.0.zip) · [使用说明](docs/使用说明.md) · [架构](docs/00-产品与技术框架.md)
+
 ![总览](screenshots/shot-dark.png)
 
 ---
@@ -67,7 +69,7 @@
 
 ### 非技术用户
 
-1. 下载 `自媒体中控台-v0.1.0.zip`（[Releases](https://github.com/laq3416-lab/creator-console/releases)）
+1. 下载 [`creator-console-v0.1.0.zip`](https://github.com/laq3416-lab/creator-console/releases/latest/download/creator-console-v0.1.0.zip)
 2. 解压，双击 `1-安装并启动.command`（Windows 用 `.bat`）
 3. 浏览器打开 `http://127.0.0.1:3300/setup`，四步配置：
    - 填 DeepSeek API Key（[申请](https://platform.deepseek.com)，一次复盘约 ¥0.01）
