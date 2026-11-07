@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>自媒体中控台 · 原型</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  --r:14px; --fs:14px; --pad:18px;
+  --dy:#00D8C8; --xhs:#FF2442; --xy:#FFC300;
+}
+:root[data-theme="dark"]{
+  --bg:#080C11; --surface:#0F151D; --surface2:#151E28; --border:#1C2833;
+  --border2:#26343F;
+  --text:#E8EFF7; --text2:#8496A8; --text3:#54646F;
+  --accent:#2FD9A6; --accent2:#0E2E27; --on-accent:#04221B;
+  --red:#FF6B6B; --red-bg:rgba(255,107,107,.1);
+  --amber:#FFB454; --amber-bg:rgba(255,180,84,.1);
+  --green:#2FD9A6; --green-bg:rgba(47,217,166,.1);
+  --grid:#182430;
+  --shadow:0 8px 24px -12px rgba(0,0,0,.8);
+  --dy:#00D8C8; --xhs:#FF4D6A; --xy:#FFC53D;
+}
+:root[data-theme="light"]{
+  --bg:#F6F7F9; --surface:#FFFFFF; --surface2:#F2F4F7; --border:#E6E9EE;
+  --border2:#D8DDE5;
+  --text:#111827; --text2:#6B7280; --text3:#9AA3AF;
+  --accent:#0EA36B; --accent2:#E8F7F1; --on-accent:#FFFFFF;
+  --red:#E5484D; --red-bg:#FDECEC;
+  --amber:#C97A16; --amber-bg:#FDF3E3;
+  --green:#0EA36B; --green-bg:#E8F7F1;
+  --grid:#EDF0F4;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px -16px rgba(16,24,40,.18);
+  --dy:#0E9F92; --xhs:#E11D48; --xy:#B8860B;
+}
+:root[data-theme="dense"]{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#F5F7FA; --border:#DCE1E8;
+  --border2:#C9D0DA;
+  --text:#0F172A; --text2:#475569; --text3:#94A3B8;
+  --accent:#1B64F2; --accent2:#EBF1FE; --on-accent:#FFFFFF;
+  --red:#DC2626; --red-bg:#FEF2F2;
+  --amber:#B45309; --amber-bg:#FFFBEB;
+  --green:#15803D; --green-bg:#F0FDF4;
+  --r:5px; --fs:13px; --pad:13px;
+  --grid:#EEF1F5;
+  --shadow:none;
+  --dy:#0B8C82; --xhs:#DC2626; --xy:#A16207;
+}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--font);
+  font-size:var(--fs); -webkit-font-smoothing:antialiased; line-height:1.5;
+}
+::selection{background:var(--accent);color:var(--on-accent)}
+
+/* ---------- shell ---------- */
+.shell{display:flex;min-height:100vh}
+.sidebar{
+  width:212px;flex:0 0 212px;border-right:1px solid var(--border);
+  background:var(--surface);display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;padding:16px 12px;
+}
+.brand{display:flex;align-items:center;gap:9px;padding:4px 8px 20px}
+.brand-mark{
+  width:26px;height:26px;border-radius:8px;flex:0 0 26px;
+  background:linear-gradient(135deg,var(--accent),#5B9DFF);
+  display:grid;place-items:center;color:#04221B;font-weight:800;font-size:13px;
+}
+.brand-name{font-weight:650;letter-spacing:.2px}
+.brand-sub{font-size:11px;color:var(--text3);margin-top:-2px}
+
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
+  color:var(--text2);cursor:pointer;font-size:13.5px;transition:.12s;user-select:none;
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent2);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 22%,transparent);font-weight:600}
+.nav-item svg{flex:0 0 16px;opacity:.9}
+.nav-num{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--text3)}
+.nav-item.active .nav-num{color:var(--accent)}
+
+.side-foot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px}
+.sync{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text3);padding:6px 8px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.pulse{animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- main ---------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  height:58px;display:flex;align-items:center;gap:14px;padding:0 24px;
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);
+}
+.page-title{font-size:15px;font-weight:650}
+.page-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.spacer{flex:1}
+.themes{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:2px;gap:2px}
+.themes button{
+  border:0;background:transparent;color:var(--text2);font-family:inherit;font-size:12px;
+  padding:5px 11px;border-radius:7px;cursor:pointer;transition:.12s;white-space:nowrap;
+}
+.themes button:hover{color:var(--text)}
+.themes button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+.icon-btn{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;
+  color:var(--text2);display:grid;place-items:center;cursor:pointer;
+}
+.icon-btn:hover{color:var(--text);background:var(--surface2)}
+.avatar{
+  width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#5B9DFF,#A78BFA);
+  display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;cursor:pointer;
+}
+
+.content{padding:22px 24px 48px;max-width:1400px;width:100%}
+.view{display:none}
+.view.on{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- primitives ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.sec-head{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+.sec-head h2{font-size:13px;font-weight:650;letter-spacing:.3px;color:var(--text)}
+.sec-head .hint{font-size:11.5px;color:var(--text3)}
+.sec-head .more{margin-left:auto;font-size:12px;color:var(--text2);cursor:pointer}
+.sec-head .more:hover{color:var(--accent)}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g-2-1{grid-template-columns:1.62fr 1fr}
+@media(max-width:1180px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}.g-2-1{grid-template-columns:1fr}}
+
+.kpi{padding:var(--pad);position:relative;overflow:hidden}
+.kpi-label{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.kpi-value{font-size:27px;font-weight:680;letter-spacing:-.6px;margin-top:8px;font-variant-numeric:tabular-nums}
+.kpi-meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text3)}
+.trend{font-family:var(--mono);font-size:12px;font-weight:600;padding:1px 6px;border-radius:5px}
+.up{color:var(--green);background:var(--green-bg)}
+.down{color:var(--red);background:var(--red-bg)}
+.kpi-spark{position:absolute;right:14px;bottom:14px;opacity:.85}
+
+/* ---------- accounts ---------- */
+.acc{padding:var(--pad);display:flex;flex-direction:column;gap:14px;cursor:pointer;transition:.16s;position:relative}
+.acc:hover{border-color:var(--border2);transform:translateY(-1px)}
+.acc-top{display:flex;align-items:center;gap:10px}
+.plat{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  font-size:11px;font-weight:800;flex:0 0 30px;letter-spacing:-.4px;
+}
+.acc-name{font-size:13.5px;font-weight:600}
+.acc-handle{font-size:11.5px;color:var(--text3);font-family:var(--mono)}
+.acc-nums{display:flex;gap:22px}
+.acc-num b{display:block;font-size:18px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.acc-num span{font-size:11px;color:var(--text3)}
+.acc-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px dashed var(--border);padding-top:11px;font-size:11.5px;color:var(--text3)}
+.mini-bars{display:flex;align-items:flex-end;gap:2.5px;height:22px}
+.mini-bars i{width:4px;border-radius:2px;background:var(--border2);display:block}
+.mini-bars i.hot{background:var(--accent)}
+
+/* ---------- alerts ---------- */
+.alert-list{display:flex;flex-direction:column}
+.alert{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);transition:.12s}
+.alert:last-child{border-bottom:0}
+.alert:hover{background:var(--surface2)}
+.alert-bar{width:3px;border-radius:2px;flex:0 0 3px;align-self:stretch}
+.a-red .alert-bar{background:var(--red)}
+.a-amber .alert-bar{background:var(--amber)}
+.a-green .alert-bar{background:var(--green)}
+.alert-body{flex:1;min-width:0}
+.alert-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tag{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;letter-spacing:.2px}
+.a-red .tag{color:var(--red);background:var(--red-bg)}
+.a-amber .tag{color:var(--amber);background:var(--amber-bg)}
+.a-green .tag{color:var(--green);background:var(--green-bg)}
+.alert-text{font-size:12.5px;color:var(--text2);margin-top:5px;line-height:1.55}
+.alert-act{
+  display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:11.5px;
+  color:var(--accent);cursor:pointer;font-weight:600;
+}
+.alert-act:hover{text-decoration:underline}
+.alert-time{font-size:11px;color:var(--text3);white-space:nowrap;font-family:var(--mono)}
+
+/* ---------- chart ---------- */
+.chart-wrap{padding:var(--pad);display:flex;flex-direction:column;gap:4px}
+.chart-head{display:flex;align-items:baseline;gap:10px}
+.chart-val{font-size:22px;font-weight:680;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.chart-legend{display:flex;gap:14px;font-size:11.5px;color:var(--text3);margin-top:2px}
+.chart-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* ---------- table ---------- */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  text-align:left;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.4px;
+  padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;
+  background:var(--surface2);
+}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:.1s;cursor:pointer}
+tbody tr:hover{background:var(--surface2)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px}
+.t-title{display:flex;align-items:center;gap:9px;min-width:220px}
+.t-thumb{width:34px;height:34px;border-radius:7px;flex:0 0 34px;display:grid;place-items:center;font-size:15px;background:var(--surface2);border:1px solid var(--border)}
+.t-title b{font-weight:550;font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:330px}
+.t-title span{font-size:11px;color:var(--text3)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text2);white-space:nowrap}
+.rate{display:inline-flex;align-items:center;gap:6px}
+.rate-bar{width:44px;height:4px;border-radius:2px;background:var(--border);overflow:hidden}
+.rate-bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+
+/* ---------- inbox ---------- */
+.inbox{display:grid;grid-template-columns:308px 1fr;min-height:560px;overflow:hidden}
+@media(max-width:1000px){.inbox{grid-template-columns:1fr}}
+.conv-list{border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0}
+.conv-filter{display:flex;gap:5px;padding:12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.chip{
+  font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);
+  color:var(--text2);cursor:pointer;background:transparent;font-family:inherit;transition:.12s;
+}
+.chip:hover{color:var(--text);border-color:var(--border2)}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.convs{overflow-y:auto;flex:1;max-height:520px}
+.conv{display:flex;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:.1s}
+.conv:hover{background:var(--surface2)}
+.conv.on{background:var(--accent2);border-left:2px solid var(--accent);padding-left:12px}
+.conv-av{width:32px;height:32px;border-radius:50%;flex:0 0 32px;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--surface2);border:1px solid var(--border);color:var(--text2)}
+.conv-main{flex:1;min-width:0}
+.conv-row{display:flex;align-items:center;gap:6px}
+.conv-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-time{margin-left:auto;font-size:10.5px;color:var(--text3);white-space:nowrap;font-family:var(--mono)}
+.conv-msg{font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+.badge{min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px;flex:0 0 auto}
+.thread{display:flex;flex-direction:column;min-width:0}
+.thread-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--border)}
+.thread-body{flex:1;padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:360px;background:var(--surface2)}
+.msg{max-width:74%;padding:9px 13px;border-radius:12px;font-size:12.5px;line-height:1.55;position:relative}
+.msg.in{background:var(--surface);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.out{background:var(--accent);color:var(--on-accent);align-self:flex-end;border-bottom-right-radius:4px}
+.msg-t{font-size:10px;opacity:.6;margin-top:5px;font-family:var(--mono)}
+.suggest-bar{padding:12px 18px;border-top:1px solid var(--border);background:var(--surface)}
+.suggest-bar .lbl{font-size:11px;color:var(--text3);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.quick{display:flex;gap:7px;flex-wrap:wrap}
+.quick button{
+  font-family:inherit;font-size:11.5px;padding:6px 11px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:.12s;
+}
+.quick button:hover{border-color:var(--accent);color:var(--accent)}
+.composer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);align-items:center}
+.composer input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:8px 12px;color:var(--text);font-family:inherit;font-size:12.5px;outline:none;
+}
+.composer input:focus{border-color:var(--accent)}
+.btn{
+  font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 15px;border-radius:8px;
+  border:1px solid transparent;background:var(--accent);color:var(--on-accent);cursor:pointer;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:var(--border);color:var(--text2)}
+.btn.ghost:hover{border-color:var(--border2);color:var(--text)}
+
+/* ---------- benchmark ---------- */
+.bk-row{display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid var(--border);transition:.12s}
+.bk-row:last-child{border-bottom:0}
+.bk-row:hover{background:var(--surface2)}
+.bk-rank{font-family:var(--mono);font-size:12px;color:var(--text3);width:20px;flex:0 0 20px}
+.bk-rank.top{color:var(--amber);font-weight:700}
+.bk-cover{width:44px;height:58px;border-radius:7px;flex:0 0 44px;display:grid;place-items:center;font-size:15px;color:rgba(255,255,255,.92);overflow:hidden;position:relative}
+.bk-main{flex:1;min-width:0}
+.bk-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-sub{font-size:11.5px;color:var(--text3);margin-top:3px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bk-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.bk-tags span{font-size:10px;padding:1px 6px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text2)}
+.bk-num{text-align:right;min-width:76px}
+.bk-num b{display:block;font-size:14px;font-weight:650;font-variant-numeric:tabular-nums}
+.bk-num span{font-size:10.5px;color:var(--text3)}
+.bk-ratio{text-align:right;min-width:76px}
+.bk-ratio b{display:block;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;font-family:var(--mono);letter-spacing:-.5px}
+.bk-ratio span{font-size:10.5px;color:var(--text3)}
+.ratio-hot b{color:var(--red)}
+.ratio-warm b{color:var(--amber)}
+.ratio-cool b{color:var(--text2)}
+.statusbar{display:flex;align-items:center;gap:12px;padding:13px 16px;flex-wrap:wrap}
+.statusbar b{color:var(--text);font-variant-numeric:tabular-nums}
+.cmp-row{display:grid;grid-template-columns:126px 200px 200px 1fr;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);font-size:12.5px}
+.cmp-bar{flex:1;height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;min-width:80px}
+.cmp-bar i{display:block;height:100%;border-radius:3px;background:var(--red);opacity:.7}
+.cmp-bar.ok i{background:var(--green);opacity:.85}
+.cmp-row:last-child{border-bottom:0}
+.cmp-row:hover{background:var(--surface2)}
+.cmp-dim{color:var(--text2)}
+.cmp-v{font-variant-numeric:tabular-nums}
+.cmp-v span{color:var(--text3);font-size:11px;margin-left:4px}
+.verdict{font-size:11px;padding:2px 8px;border-radius:5px;display:inline-block;white-space:nowrap}
+.v-bad{color:var(--red);background:var(--red-bg)}
+.v-ok{color:var(--green);background:var(--green-bg)}
+.dir-item{display:flex;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border);align-items:flex-start}
+.dir-item:last-child{border-bottom:0}
+.dir-k{font-size:11px;color:var(--text3);width:66px;flex:0 0 66px;padding-top:1px}
+.dir-v{font-size:12.5px;line-height:1.6;color:var(--text2)}
+.dir-v b{color:var(--text);font-weight:650}
+
+/* ---------- advisor ---------- */
+.sugg{padding:var(--pad);display:flex;flex-direction:column;gap:11px}
+.sugg-head{display:flex;align-items:center;gap:8px}
+.sugg h3{font-size:13.5px;font-weight:650;line-height:1.4}
+.sugg p{font-size:12.5px;color:var(--text2);line-height:1.6}
+.evidence{display:flex;flex-direction:column;gap:5px;border-left:2px solid var(--border);padding-left:10px}
+.evidence div{font-size:11.5px;color:var(--text3);font-family:var(--mono)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts span{
+  font-size:11.5px;padding:4px 9px;border-radius:6px;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text2);
+}
+.conf{margin-left:auto;font-size:10.5px;font-family:var(--mono);color:var(--text3)}
+
+.note{
+  display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:9px;
+  background:var(--surface2);border:1px dashed var(--border2);font-size:11.5px;color:var(--text3);
+  margin-top:22px;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◈</div>
+      <div>
+        <div class="brand-name">中控台</div>
+        <div class="brand-sub">Creator OS</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="sync"><span class="dot pulse"></span> 采集正常 · 2 分钟前</div>
+      <div class="sync"><span class="dot" style="background:var(--amber);box-shadow:0 0 0 3px var(--amber-bg)"></span> 闲鱼采集延迟 12 分钟</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="page-title" id="ptitle">总览</div>
+        <div class="page-sub" id="psub">3 个账号 · 数据截至 19:14</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="themes" id="themes">
+        <button data-t="dark" class="on">深色</button>
+        <button data-t="light">浅色</button>
+        <button data-t="dense">高密度</button>
+      </div>
+      <button class="icon-btn" title="刷新">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <div class="avatar">泽</div>
+    </header>
+    <div class="content">
+      <section class="view on" id="v-dash"></section>
+      <section class="view" id="v-contents"></section>
+      <section class="view" id="v-inbox"></section>
+      <section class="view" id="v-advisor"></section>
+      <section class="view" id="v-accounts"></section>
+      <section class="view" id="v-bench"></section>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============ 数据（示意） ============ */
+const P = {
+  douyin:{name:'抖音', v:'--dy'},
+  xhs:{name:'小红书', v:'--xhs'},
+  xianyu:{name:'闲鱼', v:'--xy'},
+};
+
+const accounts = [
+  {id:'dy', key:'douyin', handle:'@阿泽搞副业', fans:12480, delta:356, works:86, unread:3,
+   series:[9800,10400,10900,11200,11800,12124,12480], plays:[18200,24100,19800,32600,41200,28400,24100]},
+  {id:'xhs', key:'xhs', handle:'@阿泽的副业手记', fans:6240, delta:128, works:54, unread:5,
+   series:[5100,5340,5520,5760,5900,6112,6240], plays:[8200,9400,7600,12100,15400,11200,9800]},
+  {id:'xy', key:'xianyu', handle:'@阿泽二手仓', fans:210, delta:6, works:23, unread:12,
+   series:[180,186,192,196,201,204,210], plays:[1200,1450,1320,1680,1900,1560,1420]},
+];
+
+const contents = [
+  {id:1, t:'我用这个方法，3个月从0做到1万粉', pk:'douyin', type:'视频', icon:'▶', date:'11-05 19:20', v:182400, l:8420, c:316, s:2140, r:4.6, hot:1},
+  {id:2, t:'副业避坑：这5种千万别碰', pk:'douyin', type:'视频', icon:'▶', date:'11-03 20:05', v:46800, l:1980, c:142, s:610, r:4.2},
+  {id:3, t:'普通人做自媒体，第一天该做什么', pk:'douyin', type:'视频', icon:'▶', date:'11-01 18:40', v:12300, l:420, c:38, s:96, r:3.4},
+  {id:4, t:'小红书起号避雷清单（亲测）', pk:'xhs', type:'图文', icon:'▤', date:'11-04 12:10', v:28600, l:2140, c:96, s:1820, r:7.5, hot:1},
+  {id:5, t:'我整理的闲鱼定价表', pk:'xianyu', type:'商品', icon:'▣', date:'11-02 09:30', v:5400, l:86, c:12, s:64, r:1.6},
+];
+
+const alerts = [
+  {lv:'red', tag:'规则命中', t:'完播率跌破账号中位线', d:'《我用这个方法…》完播率 22%，账号中位 41%，前 3 秒跳出 68%。这条的流量池已经停了。', a:'改开头：直接抛结果', time:'12 分钟前'},
+  {lv:'amber', tag:'待处理', t:'闲鱼未读私信 12 条，已超 2 小时', d:'询价类占 75%，按你账号历史转化率约等于 3 单流失。', a:'去收件箱', time:'34 分钟前'},
+  {lv:'green', tag:'机会', t:'24 小时涨粉 356，是日均 3.2 倍', d:'与「3 个月 1 万粉」同题材，建议 48 小时内追发同系列续集。', a:'看选题建议', time:'1 小时前'},
+];
+
+const convs = [
+  {id:1, pk:'xianyu', n:'木木子', av:'木', m:'这个还能便宜吗？包邮不', time:'2分钟', u:1, tag:'询价',
+   thread:[
+     {dir:'in', x:'老板，这个还能便宜吗？包邮不', t:'19:12'},
+     {dir:'out', x:'可以小刀，包邮的，今天拍今天发', t:'19:13'},
+     {dir:'in', x:'那 85 能出不？我看了下别家…', t:'19:14'}]},
+  {id:2, pk:'xianyu', n:'小陈同学', av:'陈', m:'有发票吗？公司报销要用', time:'8分钟', u:1, tag:'售后',
+   thread:[
+     {dir:'in', x:'有发票吗？公司报销要用', t:'19:06'}]},
+  {id:3, pk:'douyin', n:'一只鱼', av:'鱼', m:'求第3步的详细教程', time:'21分钟', u:1, tag:'求资料',
+   thread:[
+     {dir:'in', x:'求第 3 步的详细教程，看不太懂', t:'18:53'},
+     {dir:'in', x:'已关注，蹲一个', t:'18:54'}]},
+  {id:4, pk:'xhs', n:'Momo', av:'M', m:'姐妹这个本子链接能发下吗', time:'40分钟', u:1, tag:'求链接',
+   thread:[
+     {dir:'in', x:'姐妹这个本子链接能发下吗，找了好久', t:'18:34'}]},
+  {id:5, pk:'douyin', n:'老张', av:'张', m:'合作怎么收费？', time:'1小时', u:1, tag:'商务',
+   thread:[
+     {dir:'in', x:'你好，看你这号数据不错，合作怎么收费？', t:'18:02'},
+     {dir:'out', x:'感谢认可，麻烦说下产品和预算，我发报价单给你', t:'18:20'},
+     {dir:'in', x:'母婴类，预算 3000 左右', t:'18:31'}]},
+  {id:6, pk:'xianyu', n:'大熊', av:'熊', m:'80 卖不卖，我诚心要', time:'1小时', u:1, tag:'砍价',
+   thread:[
+     {dir:'in', x:'80 卖不卖，我诚心要', t:'18:15'}]},
+  {id:7, pk:'xhs', n:'小鹿', av:'鹿', m:'那个表格能分享下吗', time:'1.5小时', u:1, tag:'求教程',
+   thread:[
+     {dir:'in', x:'你视频里那个表格能分享下吗，谢谢！', t:'17:50'}]},
+  {id:8, pk:'xianyu', n:'阿亮', av:'亮', m:'能包个邮吗，我这儿偏远', time:'2小时', u:1, tag:'求包邮',
+   thread:[
+     {dir:'in', x:'能包个邮吗，我这儿偏远地区', t:'17:20'},
+     {dir:'out', x:'偏远加 8 块，其他包邮', t:'17:22'},
+     {dir:'in', x:'行吧，那我拍', t:'17:24'}]},
+  {id:9, pk:'xhs', n:'阿茶', av:'茶', m:'封面用的什么模板', time:'2.5小时', u:1, tag:'求模板',
+   thread:[
+     {dir:'in', x:'小姐姐封面用的什么模板呀，好干净', t:'17:02'}]},
+  {id:10, pk:'xianyu', n:'婷婷', av:'婷', m:'这个有几成新？', time:'3小时', u:1, tag:'问成色',
+   thread:[
+     {dir:'in', x:'这个有几成新？有没有磕碰', t:'16:40'}]},
+  {id:11, pk:'xhs', n:'咖喱', av:'咖', m:'价格还能谈吗', time:'3.5小时', u:1, tag:'问价',
+   thread:[
+     {dir:'in', x:'价格还能谈吗，想入两本', t:'16:12'}]},
+  {id:12, pk:'xianyu', n:'老王', av:'王', m:'尺寸多大，放得下 A4 吗', time:'4小时', u:1, tag:'问尺寸',
+   thread:[
+     {dir:'in', x:'尺寸多大，放得下 A4 吗', t:'15:48'}]},
+  {id:13, pk:'douyin', n:'阿May', av:'May', m:'想找你带一款产品', time:'5小时', u:1, tag:'合作',
+   thread:[
+     {dir:'in', x:'你好，想找你带一款产品，方便聊吗', t:'14:55'}]},
+  {id:14, pk:'xianyu', n:'绿豆', av:'绿', m:'链接失效了，还有货吗', time:'6小时', u:1, tag:'求链接',
+   thread:[
+     {dir:'in', x:'链接失效了，还有货吗', t:'13:40'}]},
+  {id:15, pk:'xhs', n:'柠檬', av:'柠', m:'按你的方法做，真的起量了', time:'7小时', u:1, tag:'感谢',
+   thread:[
+     {dir:'in', x:'按你的方法做，真的起量了！谢谢宝藏博主', t:'12:30'}]},
+  {id:16, pk:'xianyu', n:'阿杰', av:'杰', m:'已拍，今天能发吗', time:'8小时', u:1, tag:'已拍',
+   thread:[
+     {dir:'in', x:'已拍，今天能发吗', t:'11:20'},
+     {dir:'out', x:'能发，下午顺丰', t:'11:26'}]},
+  {id:17, pk:'xianyu', n:'小满', av:'满', m:'什么时候补货', time:'9小时', u:1, tag:'问发货',
+   thread:[
+     {dir:'in', x:'什么时候补货，想买两个', t:'10:44'}]},
+  {id:18, pk:'xianyu', n:'皮皮', av:'皮', m:'55 可以吗', time:'10小时', u:1, tag:'砍价',
+   thread:[
+     {dir:'in', x:'55 可以吗，学生党', t:'09:58'}]},
+  {id:19, pk:'xianyu', n:'阿紫', av:'紫', m:'有保修吗', time:'12小时', u:1, tag:'问保修',
+   thread:[
+     {dir:'in', x:'有保修吗，坏了怎么办', t:'08:10'}]},
+  {id:20, pk:'xianyu', n:'老李', av:'李', m:'已下单，麻烦快点', time:'昨天', u:1, tag:'已下单',
+   thread:[
+     {dir:'in', x:'已下单，麻烦快点', t:'昨天 21:40'}]},
+];
+
+/* ============ 工具 ============ */
+const fmt = n => n >= 10000 ? (n/10000).toFixed(1).replace(/\.0$/,'') + '万' : n.toLocaleString();
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+/* 平台色随主题变化：浅色主题下必须压深，否则青色在白色背景上几乎看不清 */
+const pcolor = k => css(P[k].v);
+
+function sparkline(data, color, w=62, h=20){
+  const min=Math.min(...data), max=Math.max(...data), span=(max-min)||1;
+  const pts = data.map((v,i)=>[ (i/(data.length-1))*(w-2)+1, h-3-((v-min)/span)*(h-6) ]);
+  const d = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">
+    <path d="${d}" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function areaChart(data, labels, color, w=520, h=150){
+  const lo = Math.min(...data), hi = Math.max(...data);
+  const pad = ((hi-lo) || Math.abs(hi)*0.1 || 1) * 0.45;   // 自适应区间，避免曲线被压平
+  const min = lo - pad, max = hi + pad;
+  const px = i => 8 + (i/(data.length-1))*(w-16);
+  const py = v => h-22 - ((v-min)/(max-min))*(h-40);
+  const line = data.map((v,i)=>(i?'L':'M')+px(i).toFixed(1)+' '+py(v).toFixed(1)).join(' ');
+  const area = line + ` L${px(data.length-1).toFixed(1)} ${h-22} L${px(0).toFixed(1)} ${h-22} Z`;
+  const gid = 'g'+Math.random().toString(36).slice(2,7);
+  let grid='', ticks='';
+  for(let i=0;i<4;i++){
+    const y = 14 + i*((h-40)/3);
+    grid += `<line x1="8" y1="${y}" x2="${w-8}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+  labels.forEach((lb,i)=>{
+    ticks += `<text x="${px(i)}" y="${h-6}" fill="var(--text3)" font-size="10" text-anchor="middle" font-family="var(--mono)">${lb}</text>`;
+  });
+  const dots = data.map((v,i)=>`<circle cx="${px(i)}" cy="${py(v).toFixed(1)}" r="2.6" fill="var(--surface)" stroke="${color}" stroke-width="1.8"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="overflow:visible">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" fill="url(#${gid})"/>
+    <path d="${line}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${ticks}
+  </svg>`;
+}
+
+function platBadge(key, size=30){
+  const p = P[key];
+  return `<div class="plat" style="background:color-mix(in srgb,${pcolor(key)} 16%,transparent);color:${pcolor(key)};width:${size}px;height:${size}px;flex-basis:${size}px">${p.name.slice(0,1)}</div>`;
+}
+
+/* ============ 视图 ============ */
+const S = { view:'dash', theme:'dark', filter:'all', conv:1, bench:'peer' };
+
+function renderDash(){
+  const totalFans = accounts.reduce((a,b)=>a+b.fans,0);
+  const totalPlays = accounts.reduce((a,b)=>a+b.plays[6],0);
+  const unread = accounts.reduce((a,b)=>a+b.unread,0);
+
+  const kpis = [
+    {l:'全网粉丝', v:fmt(totalFans), t:'+490', up:1, s:accounts[0].series, c:'var(--accent)'},
+    {l:'今日播放', v:fmt(totalPlays), t:'+12.4%', up:1, s:accounts[0].plays, c:'var(--accent)'},
+    {l:'未读消息', v:unread, t:'3 条超 2h', up:0, s:[6,9,7,11,9,14,20], c:'var(--amber)'},
+    {l:'待处理预警', v:'3', t:'1 条高危', up:0, s:[1,0,2,1,3,2,3], c:'var(--red)'},
+  ];
+
+  return `
+  <div class="grid g4">
+    ${kpis.map(k=>`
+      <div class="card kpi">
+        <div class="kpi-label">${k.l}</div>
+        <div class="kpi-value">${k.v}</div>
+        <div class="kpi-meta">
+          <span class="trend ${k.up?'up':'down'}">${k.t}</span>
+          <span>较昨日</span>
+        </div>
+        <div class="kpi-spark">${sparkline(k.s, k.c)}</div>
+      </div>`).join('')}
+  </div>
+
+  <div class="sec-head"><h2>账号矩阵</h2><span class="hint">点击进入单账号详图</span><span class="more">管理账号 →</span></div>
+  <div class="grid g3">
+    ${accounts.map(a=>{
+      const p = P[a.key]; const mx = Math.max(...a.plays);
+      return `<div class="card acc" onclick="go('accounts')">
+        <div class="acc-top">
+          ${platBadge(a.key)}
+          <div style="min-width:0">
+            <div class="acc-name">${a.handle}</div>
+            <div class="acc-handle">${p.name} · ${a.works} 作品</div>
+          </div>
+          <span class="trend up" style="margin-left:auto">+${a.delta}</span>
+        </div>
+        <div class="acc-nums">
+          <div class="acc-num"><b>${fmt(a.fans)}</b><span>粉丝</span></div>
+          <div class="acc-num"><b>${fmt(a.plays[6])}</b><span>今日播放</span></div>
+          <div class="acc-num"><b>${a.unread}</b><span>未读</span></div>
+        </div>
+        <div class="acc-foot">
+          <div class="mini-bars">${a.plays.map(v=>`<i class="${v>mx*0.7?'hot':''}" style="height:${Math.max(3,v/mx*22)}px"></i>`).join('')}</div>
+          <span>近 7 日</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="sec-head"><h2>今日必看</h2><span class="hint">规则引擎实时产出</span><span class="more">全部建议 →</span></div>
+  <div class="grid g-2-1">
+    <div class="card">
+      <div class="alert-list">
+        ${alerts.map(x=>`
+          <div class="alert a-${x.lv}">
+            <div class="alert-bar"></div>
+            <div class="alert-body">
+              <div class="alert-title">${x.t}<span class="tag">${x.tag}</span></div>
+              <div class="alert-text">${x.d}</div>
+              <div class="alert-act">${x.a} <span>→</span></div>
+            </div>
+            <div class="alert-time">${x.time}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="card chart-wrap">
+      <div class="chart-head">
+        <span class="chart-val">24.1万</span>
+        <span class="trend up">+12.4%</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--text3);margin-bottom:6px">近 7 日播放量 · 抖音</div>
+      ${areaChart(accounts[0].plays, ['11-01','02','03','04','05','06','07'], pcolor('douyin'))}
+      <div class="chart-legend"><span><i style="background:var(--dy)"></i>抖音</span><span><i style="background:var(--xhs)"></i>小红书</span></div>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>作品表现 Top</h2><span class="hint">按播放量排序</span><span class="more">作品库 →</span></div>
+  <div class="card tbl-wrap">
+    <table>
+      <thead><tr><th>作品</th><th>平台</th><th>播放</th><th>点赞</th><th>评论</th><th>收藏</th><th>互动率</th></tr></thead>
+      <tbody>${contents.slice(0,4).map(c=>`
+        <tr onclick="go('contents')">
+          <td><div class="t-title"><div class="t-thumb">${c.icon}</div>
+            <div><b>${c.t}</b><span>${c.date}</span></div>${c.hot?'<span class="tag" style="color:var(--red);background:var(--red-bg)">爆</span>':''}</div></td>
+          <td><span class="pill">${P[c.pk].name}</span></td>
+          <td class="num">${fmt(c.v)}</td>
+          <td class="num">${fmt(c.l)}</td>
+          <td class="num">${c.c}</td>
+          <td class="num">${fmt(c.s)}</td>
+          <td><div class="rate"><span class="num">${c.r}%</span><div class="rate-bar"><i style="width:${Math.min(100,c.r*12)}%"></i></div></div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">⚠ 数据为示意，用于确认界面结构。真实数据接入后此处显示采集时间与来源。</div>`;
+}
+
+function renderContents(){
+  const f = S.filter;
+  const list = f==='all' ? contents : contents.filter(c=>c.pk===f);
+  const chips = [['all','全部'],['douyin','抖音'],['xhs','小红书'],['xianyu','闲鱼']];
+  return `
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    ${chips.map(([k,l])=>`<button class="chip ${f===k?'on':''}" onclick="setFilter('${k}')">${l}</button>`).join('')}
+    <div class="spacer" style="flex:1"></div>
+    <button class="btn ghost">导出 CSV</button>
+    <button class="btn">手动录入</button>
+  </div>
+  <div class="card tbl-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:34%">作品</th><th>平台</th><th>类型</th><th>发布</th>
+        <th style="text-align:right">播放</th><th style="text-align:right">点赞</th>
+        <th style="text-align:right">评论</th><th style="text-align:right">收藏</th><th>互动率</th><th>诊断</th>
+      </tr></thead>
+      <tbody>${list.map(c=>`
+        <tr>
+          <td><div class="t-title"><div class="t-thumb">${c.icon}</div>
+            <div><b>${c.t}</b><span>${P[c.pk].name} · ${c.date}</span></div></div></td>
+          <td><span class="pill">${P[c.pk].name}</span></td>
+          <td style="color:var(--text2);font-size:12px">${c.type}</td>
+          <td class="num" style="color:var(--text3)">${c.date}</td>
+          <td class="num" style="text-align:right">${fmt(c.v)}</td>
+          <td class="num" style="text-align:right">${fmt(c.l)}</td>
+          <td class="num" style="text-align:right">${c.c}</td>
+          <td class="num" style="text-align:right">${fmt(c.s)}</td>
+          <td><div class="rate"><span class="num">${c.r}%</span><div class="rate-bar"><i style="width:${Math.min(100,c.r*12)}%"></i></div></div></td>
+          <td>${c.r<3.5
+            ? '<span class="pill" style="color:var(--red);border-color:var(--red);background:var(--red-bg)">待优化</span>'
+            : c.r>6 ? '<span class="pill" style="color:var(--green);border-color:var(--green);background:var(--green-bg)">可复用</span>'
+            : '<span class="pill">正常</span>'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="note">列顺序与阈值都可在设置页调整；「诊断」列的判定由规则引擎给出，点行进入详情看完整证据链。</div>`;
+}
+
+function renderInbox(){
+  const f = S.filter;
+  const list = f==='all' ? convs : convs.filter(c=>c.pk===f);
+  const cur = convs.find(c=>c.id===S.conv) || list[0];
+  const chips = [['all','全部'],['douyin','抖音'],['xhs','小红书'],['xianyu','闲鱼']];
+
+  return `
+  <div class="card inbox">
+    <div class="conv-list">
+      <div class="conv-filter">
+        ${chips.map(([k,l])=>{const n=k==='all'?convs.reduce((a,b)=>a+b.u,0):convs.filter(c=>c.pk===k).reduce((a,b)=>a+b.u,0);
+          return `<button class="chip ${f===k?'on':''}" onclick="setFilter('${k}')">${l}${n?` ${n}`:''}</button>`}).join('')}
+      </div>
+      <div class="convs">
+        ${list.map(c=>`
+          <div class="conv ${cur&&c.id===cur.id?'on':''}" onclick="openConv(${c.id})">
+            <div class="conv-av" style="color:${pcolor(c.pk)}">${c.av}</div>
+            <div class="conv-main">
+              <div class="conv-row">
+                <span class="conv-name">${c.n}</span>
+                <span class="pill" style="font-size:10px;padding:0 6px">${P[c.pk].name}</span>
+                <span class="conv-time">${c.time}</span>
+              </div>
+              <div class="conv-row">
+                <span class="conv-msg" style="flex:1">${c.m}</span>
+                ${c.u?`<span class="badge">${c.u}</span>`:''}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="thread">
+      ${cur ? `
+      <div class="thread-head">
+        <div class="conv-av" style="color:${P[cur.pk].color}">${cur.av}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600">${cur.n}</div>
+          <div style="font-size:11px;color:var(--text3)">${P[cur.pk].name} · 标签：${cur.tag}</div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn ghost" style="padding:6px 11px;font-size:11.5px">标记已处理</button>
+      </div>
+      <div class="thread-body">
+        ${cur.thread.map(m=>`
+          <div class="msg ${m.dir==='in'?'in':'out'}">${m.x}<div class="msg-t">${m.t}${m.dir==='out'?' · 已送达':''}</div></div>`).join('')}
+      </div>
+      <div class="suggest-bar">
+        <div class="lbl">✦ 根据对话上下文生成的话术（点一下填入，不自动发送）</div>
+        <div class="quick">
+          <button>85 可以，但今天要拍我才好发货</button>
+          <button>我这边最低 90 包邮，已经是亏本清仓了</button>
+          <button>再送你个小配件，算下来比别家划算</button>
+        </div>
+      </div>
+      <div class="composer">
+        <input placeholder="输入回复…（需手动确认发送，不会有自动回复）">
+        <button class="btn">发送</button>
+      </div>` : `<div style="padding:40px;color:var(--text3)">该平台暂无会话</div>`}
+    </div>
+  </div>
+  <div class="note">✦ 自动发送默认关闭。开启后也必须「点击确认」才发出，避免误回造成投诉。</div>`;
+}
+
+function renderAdvisor(){
+  const cards = [
+    {lv:'red', tag:'高危', t:'这条视频的流量已经停了', p:'《我用这个方法，3个月从0做到1万粉》完播率 22%，账号中位 41%。系统判断卡在开头的「信息密度」上。', ev:['完播率 22% / 中位 41%','前 3 秒跳出 68%','平均播放时长 4.1s / 中位 9.8s'], acts:['前 3 秒直接给结果','删掉片头自我介绍','标题去掉形容词'], c:'0.82'},
+    {lv:'amber', tag:'机会', t:'同题材还有二次爆发空间', p:'「3 个月 1 万粉」系列占本周涨粉 71%。同类账号在追发「过程复盘」时，7 日播放是首条的 1.6 倍。', ev:['系列贡献涨粉 356 人 · 占比 71%','同题材竞品 7 日均值 12.4 万','你的发布间隔还是 5 天'], acts:['48h 内发续集《第 2 个月我踩的坑》','标题带具体数字','结尾引导评论「你想听哪段」'], c:'0.71'},
+    {lv:'green', tag:'效率', t:'闲鱼询价转化可以再提 20%', p:'最近 30 单里，首次回复超过 30 分钟的成交率只有 12%，30 分钟内是 41%。建议把询价话术前置。', ev:['平均首响 47 分钟','30 分钟内成交率 41%','询价占比 75%'], acts:['开启未读超 10 分钟的提醒','预设 3 条询价话术','把「包邮」写进商品标题'], c:'0.88'},
+  ];
+  return `
+  <div class="grid g3">
+    ${cards.map(c=>`
+      <div class="card sugg">
+        <div class="sugg-head"><span class="tag" style="color:var(--${c.lv==='red'?'red':c.lv==='amber'?'amber':'green'});background:var(--${c.lv==='red'?'red':c.lv==='amber'?'amber':'green'}-bg)">${c.tag}</span>
+          <span class="conf">置信 ${c.c}</span></div>
+        <h3>${c.t}</h3>
+        <p>${c.p}</p>
+        <div class="evidence">${c.ev.map(e=>`<div>· ${e}</div>`).join('')}</div>
+        <div class="acts">${c.acts.map(a=>`<span>${a}</span>`).join('')}</div>
+      </div>`).join('')}
+  </div>
+
+  <div class="sec-head"><h2>本周复盘</h2><span class="hint">由大模型基于 7 日数据生成</span><span class="more">重新生成</span></div>
+  <div class="card" style="padding:20px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:.5px;margin-bottom:8px">做对了什么</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--text2);line-height:1.6">
+          <li>· 「方法 + 数字」型标题点击率比账号均值高 41%</li>
+          <li>· 19–20 点发布的视频，2 小时播放量是白天的 2.3 倍</li>
+          <li>· 评论区置顶提问，互动率平均 +1.2 个点</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:.5px;margin-bottom:8px">下周优先动作</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--text2);line-height:1.6">
+          <li>· 小红书图文占比从 20% 提到 40%，它是最省力的涨粉位</li>
+          <li>· 闲鱼询价话术模板化，目标是首响 15 分钟内</li>
+          <li>· 抖音系列化：把单条爆款拆成 3 集，而不是追新题</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="note">✦ 规则引擎负责「哪条出事了」的实时判断；大模型负责「为什么、下一步做什么」。两者输出都进同一个建议流。</div>`;
+}
+
+function renderAccounts(){
+  return `
+  <div class="grid g3" style="margin-bottom:6px">
+    ${accounts.map(a=>{
+      const p=P[a.key];
+      return `<div class="card" style="padding:var(--pad);display:flex;flex-direction:column;gap:14px">
+        <div class="acc-top">${platBadge(a.key,34)}
+          <div><div class="acc-name">${a.handle}</div><div class="acc-handle">${p.name}</div></div>
+          <span class="dot" style="margin-left:auto"></span>
+        </div>
+        <div>${areaChart(a.series, ['1','2','3','4','5','6','今天'], pcolor(a.key), 300, 96)}</div>
+        <div class="acc-nums" style="justify-content:space-between">
+          <div class="acc-num"><b>${fmt(a.fans)}</b><span>粉丝</span></div>
+          <div class="acc-num"><b>${a.works}</b><span>作品</span></div>
+          <div class="acc-num"><b>${a.unread}</b><span>未读</span></div>
+        </div>
+        <div class="acc-foot"><span>上次同步 19:12</span><span class="pill">后台采集</span></div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div class="sec-head"><h2>绑定新账号</h2><span class="hint">抖音 / 小红书 / 闲鱼</span></div>
+  <div class="card" style="padding:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:240px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:5px">用本机采集服务绑定，不碰你的密码</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">在本机浏览器里登录一次创作者后台，之后自动按点采集。<br>登录态只存在你本机，绝不上传服务器。</div>
+    </div>
+    <button class="btn">启动采集</button>
+    <button class="btn ghost">查看教程</button>
+  </div>`;
+}
+
+/* ============ 爆款对标 ============ */
+const bench = {
+  peer:[
+    {t:'上班摸鱼做的副业，第3个月收入破万', h:'@阿May搞副业', fans:28000, plays:920000, dur:'32秒', ago:'2天前',
+     tags:['结果前置','数字标题','口播'], c1:'#2b5d7a', c2:'#101a24'},
+    {t:'我把工资卡分开之后，一年多存了2万', h:'@小周存钱记', fans:14000, plays:410000, dur:'41秒', ago:'4天前',
+     tags:['身份代入','具体数字','对比'], c1:'#6b4a2f', c2:'#1a1208'},
+    {t:'0成本起步，我先做了这3件事', h:'@栗子副业', fans:36000, plays:780000, dur:'28秒', ago:'1天前',
+     tags:['清单结构','低门槛','可执行'], c1:'#3a5f3a', c2:'#0c160c'},
+    {t:'别做自媒体了，除非你能接受这3点', h:'@晚风搞钱', fans:9000, plays:260000, dur:'55秒', ago:'6天前',
+     tags:['反常识','强钩子','情绪'], c1:'#6a3346', c2:'#180a10'},
+    {t:'我用一个表格管完了所有副业', h:'@表格控小林', fans:21000, plays:340000, dur:'36秒', ago:'3天前',
+     tags:['工具演示','3段式','实用'], c1:'#3f4468', c2:'#0e1020'},
+  ],
+  head:[
+    {t:'为什么你越努力越穷？', h:'@职场老王', fans:1280000, plays:21000000, dur:'1分12秒', ago:'3天前',
+     tags:['焦虑共鸣','提问式','泛人群'], c1:'#5a3a2a', c2:'#160d08'},
+    {t:'普通人一年存下10万的3个习惯', h:'@搞钱日记', fans:860000, plays:15600000, dur:'58秒', ago:'5天前',
+     tags:['清单结构','数字标题','泛人群'], c1:'#2f4a5a', c2:'#0a1218'},
+  ],
+  mine:[
+    {t:'我用这个方法，3个月从0做到1万粉', h:'@阿泽搞副业', fans:12480, plays:182400, dur:'68秒', ago:'2天前',
+     tags:['数字标题','过程复盘','口播'], c1:'#1f4a44', c2:'#08110f'},
+  ],
+};
+
+const gaps = [
+  {d:'视频时长',      mine:'68 秒',        bench:'32 秒',        v:'偏长 2.1×',  bad:1, w:88},
+  {d:'前 3 秒给结果', mine:'否，先自我介绍', bench:'85% 直接给',   v:'缺失',      bad:1, w:85},
+  {d:'标题含数字',    mine:'否',           bench:'78% 含',       v:'缺失',      bad:1, w:78},
+  {d:'发布时段',      mine:'18:40',        bench:'19:30–20:30',  v:'偏早',      bad:1, w:60},
+  {d:'结尾引导互动',  mine:'无',           bench:'92% 有提问',   v:'缺失',      bad:1, w:92},
+  {d:'话题标签数',    mine:'1 个',         bench:'3.2 个',       v:'偏少',      bad:1, w:69},
+  {d:'评论区置顶',    mine:'有，置顶提问',  bench:'41% 有',       v:'达标',      bad:0, w:14},
+];
+
+function benchRow(item, i){
+  const ratio = item.plays / item.fans;
+  const cls = ratio >= 25 ? 'ratio-hot' : ratio >= 15 ? 'ratio-warm' : 'ratio-cool';
+  return `<div class="bk-row">
+    <span class="bk-rank ${i<3?'top':''}">${String(i+1).padStart(2,'0')}</span>
+    <div class="bk-cover" style="background:linear-gradient(150deg,${item.c1},${item.c2})">▶</div>
+    <div class="bk-main">
+      <div class="bk-title">${item.t}</div>
+      <div class="bk-sub"><span>${item.h}</span><span>${fmt(item.fans)} 粉</span><span>${item.dur}</span><span>${item.ago}</span></div>
+      <div class="bk-tags">${item.tags.map(x=>`<span>${x}</span>`).join('')}</div>
+    </div>
+    <div class="bk-num"><b>${fmt(item.plays)}</b><span>播放</span></div>
+    <div class="bk-ratio ${cls}"><b>${ratio.toFixed(1)}×</b><span>超额系数</span></div>
+  </div>`;
+}
+
+function renderBench(){
+  const tab = S.bench;
+  const list = bench[tab];
+  const tabs = [['peer','同级对标',1],['head','赛道头部',0],['mine','我的最佳',0]];
+  const one = list[0];
+  const r0 = one ? (one.plays/one.fans).toFixed(1) : '—';
+
+  return `
+  <div class="card statusbar" style="margin-bottom:14px">
+    <span class="dot pulse"></span>
+    <div style="font-size:12.5px;color:var(--text2)">追踪中 <b>32</b> 个对标账号 · 近 7 天抓到 <b>148</b> 条爆款 · 10 分钟前更新</div>
+    <div style="flex:1"></div>
+    <span class="pill">采集 每日 03:00 · 本机</span>
+    <span class="pill">解构 148/148 条</span>
+  </div>
+
+  <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+    ${tabs.map(([k,l,rec])=>`<button class="chip ${tab===k?'on':''}" onclick="setBench('${k}')">${l}${rec?' ★':''}</button>`).join('')}
+    <div style="flex:1"></div>
+    <span style="font-size:11.5px;color:var(--text3)">超额系数 = 播放 ÷ 粉丝数，越大说明内容效率越高</span>
+  </div>
+
+  <div class="card">
+    ${list.map((x,i)=>benchRow(x,i)).join('')}
+  </div>
+
+  ${tab==='head' ? `
+  <div class="note" style="margin-top:12px">⚠ 头部账号的超额系数普遍低于同级：他们的播放量靠粉丝基数堆出来，不靠结构。看他们只能学<b>选题方向</b>，学不到<b>方法</b>。这就是为什么默认停在「同级对标」。</div>` : ''}
+  ${tab==='mine' ? `
+  <div class="note" style="margin-top:12px">✦ 你自己的历史最佳是最便宜的对标：结构已验证、素材现成、重做风险最低。系数 ${r0}× 低于同级中位 28.9×，说明还有一倍以上的空间。</div>` : ''}
+
+  <div class="sec-head"><h2>我 vs 同级爆款</h2><span class="hint">《我用这个方法…》对比 5 条同级爆款中位</span><span class="more">切换对比对象 →</span></div>
+  <div class="card">
+    <div class="cmp-row" style="font-size:11px;color:var(--text3);letter-spacing:.3px">
+      <div>维度</div><div>我的作品</div><div>同级爆款中位</div><div>判定</div>
+    </div>
+    ${gaps.map(g=>`
+      <div class="cmp-row">
+        <div class="cmp-dim">${g.d}</div>
+        <div class="cmp-v">${g.mine}</div>
+        <div class="cmp-v" style="color:var(--text2)">${g.bench}</div>
+        <div style="display:flex;align-items:center;gap:11px">
+          <span class="verdict ${g.bad?'v-bad':'v-ok'}">${g.v}</span>
+          <div class="cmp-bar ${g.bad?'':'ok'}"><i style="width:${g.w}%"></i></div>
+        </div>
+      </div>`).join('')}
+  </div>
+
+  <div class="sec-head"><h2>差距 → 动作</h2><span class="hint">只取能改的维度，按影响排序</span></div>
+  <div class="card">
+    <div class="dir-item">
+      <div class="dir-k">01 时长</div>
+      <div class="dir-v"><b>把 68 秒压到 35 秒以内。</b>同级爆款中位 32 秒，你长了 2.1 倍。你的完播率 22% 很大程度是被时长拖的——同样看到 30 秒，别人已经播完了，你才播到一半。</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-k">02 开头</div>
+      <div class="dir-v"><b>前 3 秒直接给结果，删掉自我介绍。</b>85% 的同级爆款第一句就是结论或数字。你现在的前 3 秒是「大家好我是阿泽」，这三秒正在流失 68% 的人。</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-k">03 结尾</div>
+      <div class="dir-v"><b>结尾加一句具体提问。</b>92% 的爆款有引导，内容要问你「3 个月里最难的是哪一步」，而不是「点赞关注」。你的评论率 0.17%，对标中位 0.42%。</div>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>账号方向</h2><span class="hint">周更 · 看分布不看单条</span><span class="more">历史周报 →</span></div>
+  <div class="card">
+    <div class="dir-item">
+      <div class="dir-k">赛道占位</div>
+      <div class="dir-v">副业实操 <b>78%</b> · 职场心态 <b>22%</b> · 其他 <b>0%</b>　—— 单一赛道，抗风险能力偏弱</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-k">机会缺口</div>
+      <div class="dir-v">近 30 天「存钱 / 记账」赛道爆款数增速 <b>+210%</b>，你目前 <b>0 条</b>。这个赛道和你现有粉丝重叠度高，迁移成本低。</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-k">红海预警</div>
+      <div class="dir-v">「副业」赛道近 7 天新增爆款 <b>148 条</b>（环比 +38%），拥挤度在上升，同质化风险高。</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-k">结论</div>
+      <div class="dir-v"><b>副业主轴不动，把「存钱」做成第二条线。</b>用「副业赚的钱怎么存下来」做交叉选题，既吃到增速，又不丢原有受众。</div>
+    </div>
+  </div>
+  <div class="note">✦ 结构可以学，文案不能抄。生成动作时只给结构（时长、钩子类型、停顿位置），不给原句。</div>`;
+}
+
+/* ============ 壳 ============ */
+const NAV = [
+  {k:'dash', l:'总览', i:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z', n:''},
+  {k:'accounts', l:'账号矩阵', i:'M4 20v-6M12 20V4M20 20v-9', n:'3'},
+  {k:'contents', l:'作品库', i:'M4 5h16M4 12h16M4 19h10', n:'163'},
+  {k:'bench', l:'爆款雷达', i:'M12 12l7-7M12 3a9 9 0 1 0 9 9M12 9a3 3 0 1 1 0 6', n:'148'},
+  {k:'inbox', l:'收件箱', i:'M3 6h18v12H3zM3 6l9 7 9-7', n:'20'},
+  {k:'advisor', l:'智能建议', i:'M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2', n:'3'},
+];
+const TITLES = {dash:['总览','3 个账号 · 数据截至 19:14'], accounts:['账号矩阵','单账号趋势与绑定管理'], contents:['作品库','163 条 · 支持筛选排序'], bench:['爆款雷达','同级对标 ★ · 追踪 32 个账号 · 148 条爆款'], inbox:['收件箱','20 条未读 · 抖音 3 / 小红书 5 / 闲鱼 12'], advisor:['智能建议','规则预警 3 条 · 本周复盘 1 份']};
+
+function renderNav(){
+  document.getElementById('nav').innerHTML = NAV.map(n=>`
+    <div class="nav-item ${S.view===n.k?'active':''}" onclick="go('${n.k}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.i}"/></svg>
+      <span>${n.l}</span>${n.n?`<span class="nav-num">${n.n}</span>`:''}
+    </div>`).join('');
+}
+
+function go(k){
+  S.view = k;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+k).classList.add('on');
+  document.getElementById('ptitle').textContent = TITLES[k][0];
+  document.getElementById('psub').textContent = TITLES[k][1];
+  renderNav();
+}
+
+function setFilter(k){ S.filter = k; renderView(); }
+function setBench(k){ S.bench = k; renderView(); }
+function openConv(id){ S.conv = id; renderView(); }
+
+function renderView(){
+  document.getElementById('v-dash').innerHTML = renderDash();
+  document.getElementById('v-contents').innerHTML = renderContents();
+  document.getElementById('v-inbox').innerHTML = renderInbox();
+  document.getElementById('v-advisor').innerHTML = renderAdvisor();
+  document.getElementById('v-accounts').innerHTML = renderAccounts();
+  document.getElementById('v-bench').innerHTML = renderBench();
+}
+
+document.getElementById('themes').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  S.theme = b.dataset.t;
+  document.documentElement.dataset.theme = S.theme;
+  document.querySelectorAll('#themes button').forEach(x=>x.classList.toggle('on', x===b));
+  try{ localStorage.setItem('theme', S.theme); }catch(e){}
+  renderView();  // 图表用 var() 重绘，避免主题切换后颜色错乱
+});
+
+try{
+  const t = localStorage.getItem('theme');
+  if(t){ S.theme = t; document.documentElement.dataset.theme = t;
+    document.querySelectorAll('#themes button').forEach(x=>x.classList.toggle('on', x.dataset.t===t)); }
+}catch(e){}
+
+/* 支持 ?theme=light&view=inbox&filter=xianyu 直接跳转，方便截图/分享 */
+const qs = new URLSearchParams(location.search);
+if(qs.get('theme')){ S.theme = qs.get('theme');
+  document.documentElement.dataset.theme = S.theme;
+  document.querySelectorAll('#themes button').forEach(x=>x.classList.toggle('on', x.dataset.t===S.theme)); }
+if(qs.get('filter')) S.filter = qs.get('filter');
+if(qs.get('conv')) S.conv = Number(qs.get('conv'));
+if(qs.get('view')) S.view = qs.get('view');
+
+renderNav();
+renderView();
+if(S.view !== 'dash') go(S.view);
+</script>
+</body>
+</html>

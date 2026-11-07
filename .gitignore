@@ -1,0 +1,12 @@
+.data/
+.npmhome/
+.tmp/
+node_modules/
+app/.next/
+app/.env.local
+app/next-env.d.ts
+.DS_Store
+*.log
+screenshots/app/
+.share/
+分享包/

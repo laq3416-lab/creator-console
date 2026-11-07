@@ -1,0 +1,193 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import Link from 'next/link';
+import { getJobRuns, getLastRunByTask, getNewViralSuggestions } from '@/db/queries';
+import { relTime } from '@/lib/format';
+import { WATCHER_FILE } from '@/lib/paths';
+
+export const dynamic = 'force-dynamic';
+
+const TASK_META: Record<string, { label: string; every: string; everyMs: number }> = {
+  collect: { label: '采集自己的数据', every: '30 分钟', everyMs: 30 * 60_000 },
+  rules: { label: '跑规则', every: '30 分钟', everyMs: 30 * 60_000 },
+  radar: { label: '扫同赛道爆款', every: '6 小时', everyMs: 6 * 3_600_000 },
+  analyze: { label: '模型复盘', every: '24 小时', everyMs: 24 * 3_600_000 },
+};
+
+function readBeat() {
+  try {
+    const f = WATCHER_FILE;
+    if (!fs.existsSync(f)) return null;
+    const b = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return { ...b, ageSec: Math.round((Date.now() - b.lastBeat) / 1000) };
+  } catch {
+    return null;
+  }
+}
+
+export default function MonitorPage() {
+  const beat = readBeat();
+  const alive = Boolean(beat && beat.ageSec < 180);
+  const lastByTask = getLastRunByTask();
+  const runs = getJobRuns(24);
+  const virals = getNewViralSuggestions(5);
+
+  return (
+    <>
+      <div className={`card statusbar`} style={{ marginBottom: 14 }}>
+        <span className={`dot ${alive ? 'pulse' : 'warn'}`} />
+        <div style={{ fontSize: 12.5, color: 'var(--text2)' }}>
+          {alive ? (
+            <>
+              监控运行中 · 心跳 {beat!.ageSec} 秒前
+              {beat!.state?.startsWith('running:') && (
+                <span style={{ marginLeft: 8, color: 'var(--accent)' }}>
+                  正在 {TASK_META[beat!.state.split(':')[1]]?.label ?? beat!.state}
+                </span>
+              )}
+            </>
+          ) : (
+            <>监控未运行 —— 开一个终端跑 <code>npm run watch</code></>
+          )}
+        </div>
+        <div style={{ flex: 1 }} />
+        <span className="pill">每 60 秒检查一次</span>
+      </div>
+
+      <div className="grid g4">
+        {Object.entries(TASK_META).map(([key, meta]) => {
+          const last = lastByTask[key];
+          const ok = last?.status === 'ok';
+          const overdue = last?.finishedAt
+            ? Date.now() - last.finishedAt > meta.everyMs * 1.5
+            : true;
+          return (
+            <div className="card kpi" key={key}>
+              <div className="kpi-label">{meta.label}</div>
+              <div className="kpi-value" style={{ fontSize: 18, marginTop: 10 }}>
+                {last?.finishedAt ? relTime(last.finishedAt) : '从未运行'}
+              </div>
+              <div className="kpi-meta">
+                <span className={`trend ${ok ? 'up' : 'down'}`}>{ok ? '成功' : last ? '失败' : '—'}</span>
+                <span>
+                  每 {meta.every}
+                  {overdue && last ? ' · 已超时' : ''}
+                </span>
+              </div>
+              {last?.detail && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--text3)',
+                    marginTop: 8,
+                    lineHeight: 1.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {last.detail}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="sec-head">
+        <h2>最近发现的新爆款</h2>
+        <span className="hint">赞粉比 ≥ 5 倍，每次扫描自动生成</span>
+        <Link href="/bench" className="more">
+          去爆款雷达 →
+        </Link>
+      </div>
+      <div className="card">
+        {virals.length === 0 ? (
+          <div className="empty-sm" style={{ padding: '32px 24px' }}>
+            还没有新爆款提醒。下次扫描同赛道时会自动冒出来。
+          </div>
+        ) : (
+          <div className="alert-list">
+            {virals.map((v) => (
+              <div className="alert a-green" key={v.id}>
+                <div className="alert-bar" />
+                <div className="alert-body">
+                  <div className="alert-title">
+                    {v.title}
+                    <span className="tag">新爆款</span>
+                  </div>
+                  <div className="alert-text">{v.rationale}</div>
+                  <div className="alert-act">{v.action} →</div>
+                </div>
+                <div className="alert-time">{relTime(v.createdAt)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="sec-head">
+        <h2>运行记录</h2>
+        <span className="hint">任务失败不会让监控停，10 分钟后重试</span>
+      </div>
+      <div className="card tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>任务</th>
+              <th>状态</th>
+              <th>开始</th>
+              <th>耗时</th>
+              <th>输出末行</th>
+            </tr>
+          </thead>
+          <tbody>
+            {runs.map((r) => (
+              <tr key={r.id}>
+                <td>{TASK_META[r.task]?.label ?? r.task}</td>
+                <td>
+                  <span
+                    className="pill"
+                    style={
+                      r.status === 'ok'
+                        ? { color: 'var(--green)', borderColor: 'var(--green)', background: 'var(--green-bg)' }
+                        : r.status === 'failed'
+                          ? { color: 'var(--red)', borderColor: 'var(--red)', background: 'var(--red-bg)' }
+                          : {}
+                    }
+                  >
+                    {r.status === 'ok' ? '成功' : r.status === 'failed' ? '失败' : '运行中'}
+                  </span>
+                </td>
+                <td className="num" style={{ color: 'var(--text3)' }}>
+                  {new Date(r.startedAt).toLocaleString('zh-CN', { hour12: false })}
+                </td>
+                <td className="num">
+                  {r.finishedAt ? `${Math.round((r.finishedAt - r.startedAt) / 1000)}s` : '—'}
+                </td>
+                <td
+                  style={{
+                    fontSize: 11.5,
+                    color: 'var(--text3)',
+                    maxWidth: 420,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {r.detail ?? ''}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="note">
+        ✦ 监控不是「跑一次给你份报告」。它每 30 分钟看你自己、每 6 小时看同行，
+        有新爆款才提醒；规则命中立刻出卡。关掉终端就停，重开自动接上。
+      </div>
+    </>
+  );
+}
