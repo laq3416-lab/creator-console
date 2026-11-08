@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Link from 'next/link';
-import { getJobRuns, getLastRunByTask, getNewViralSuggestions } from '@/db/queries';
+import { getJobRuns, getLastRunByTask, getNewViralSuggestions, getRadarSuggestionTarget } from '@/db/queries';
 import { relTime } from '@/lib/format';
 import { WATCHER_FILE } from '@/lib/paths';
 import SyncSettings from '@/components/SyncSettings';
@@ -110,20 +110,21 @@ export default function MonitorPage() {
           </div>
         ) : (
           <div className="alert-list">
-            {virals.map((v) => (
-              <div className="alert a-green" key={v.id}>
+            {virals.map((v) => {
+              const target = getRadarSuggestionTarget(v);
+              return <div className="alert a-green" key={v.id}>
                 <div className="alert-bar" />
                 <div className="alert-body">
                   <div className="alert-title">
-                    {v.title}
+                    {target ? <Link href={`/bench/${encodeURIComponent(target)}`}>{v.title} · 查看详情 →</Link> : v.title}
                     <span className="tag">新爆款</span>
                   </div>
                   <div className="alert-text">{v.rationale}</div>
                   <div className="alert-act">{v.action} →</div>
                 </div>
                 <div className="alert-time">{relTime(v.createdAt)}</div>
-              </div>
-            ))}
+              </div>;
+            })}
           </div>
         )}
       </div>

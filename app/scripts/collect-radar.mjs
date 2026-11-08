@@ -217,7 +217,7 @@ function save({ accounts, contents }) {
   const insSugg = db.prepare(`
     INSERT OR IGNORE INTO suggestion
       (id, workspace_id, scope, target_id, source, rule_id, severity, tag, title, rationale, action, confidence, status, created_at)
-    VALUES (?, 'default', 'account', NULL, 'radar', 'radar_new_viral', 'green', '新爆款', ?, ?, ?, 0.8, 'new', ?)
+    VALUES (?, 'default', 'benchmark', ?, 'radar', 'radar_new_viral', 'green', '新爆款', ?, ?, ?, 0.8, 'new', ?)
   `);
 
   let freshCount = 0;
@@ -234,6 +234,7 @@ function save({ accounts, contents }) {
 
     const r = insSugg.run(
       `sg_radar_${f.id}`,
+      f.id,
       `${f.handle}（${f.follower_count} 粉）拿到 ${f.likes} 赞 · 赞粉比 ${f.ratio.toFixed(1)}×`,
       [
         f.duration_sec ? `${f.duration_sec} 秒` : null,

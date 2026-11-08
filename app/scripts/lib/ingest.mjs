@@ -16,6 +16,13 @@ export function openDb(dbFile = DB_FILE) {
   db.pragma('foreign_keys = ON');
   const schema = path.join(process.cwd(), 'src', 'db', 'schema.sql');
   if (fs.existsSync(schema)) db.exec(fs.readFileSync(schema, 'utf8'));
+  for (const [table, column, type] of [['content', 'video_url', 'TEXT'], ['benchmark_content', 'video_url', 'TEXT'], ['benchmark_content', 'first_seen_at', 'INTEGER']]) {
+    const columns = () => db.pragma(`table_info(${table})`);
+    if (!columns().some((c) => c.name === column)) {
+      try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`); }
+      catch (e) { if (!columns().some((c) => c.name === column)) throw e; }
+    }
+  }
   return db;
 }
 

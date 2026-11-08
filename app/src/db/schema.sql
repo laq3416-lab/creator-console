@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS content (
   title         TEXT NOT NULL,
   url           TEXT,
   published_at  INTEGER NOT NULL,
-  duration_sec  INTEGER
+  duration_sec  INTEGER,
+  video_url     TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_content_pub ON content(published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_content_acct ON content(account_id, published_at DESC);
@@ -118,7 +119,9 @@ CREATE TABLE IF NOT EXISTS benchmark_content (
   published_at         INTEGER NOT NULL,
   tags                 TEXT,                 -- 逗号分隔的结构标签
   takeaway             TEXT,                 -- JSON：能借鉴的点（模型拆解结果）
-  takeaway_at          INTEGER
+  takeaway_at          INTEGER,
+  video_url            TEXT,
+  first_seen_at        INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_bench_pub ON benchmark_content(published_at DESC);
 

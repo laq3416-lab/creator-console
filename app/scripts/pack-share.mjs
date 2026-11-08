@@ -16,7 +16,7 @@ const APP = process.cwd();
 const ROOT = path.resolve(APP, '..');
 const STAGE = path.join(ROOT, '.share', '自媒体中控台');
 const OUT = path.join(ROOT, '分享包');
-const VERSION = 'v0.1.2';
+const VERSION = 'v0.1.3';
 
 const EXCLUDE = new Set([
   'node_modules',

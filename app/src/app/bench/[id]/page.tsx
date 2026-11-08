@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getBenchmarkById, getRhythm, getBenchmarkRows, getContents } from '@/db/queries';
 import { fmt, relTime } from '@/lib/format';
 import { buildTakeaway } from './actions';
+import { hasLlmKey } from '@/lib/llm';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,9 +39,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
           ← 返回爆款雷达
         </Link>
         <div style={{ flex: 1 }} />
-        <a href={b.url} target="_blank" rel="noreferrer" className="btn">
-          打开抖音原视频 ↗
-        </a>
+        {b.url ? <a href={b.url} target="_blank" rel="noopener noreferrer" className="btn">打开抖音原视频 ↗</a> : <span className="sync-note">暂无可用原视频链接</span>}
       </div>
 
       <div className="card" style={{ padding: 22 }}>
@@ -51,7 +50,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
           <span>{b.handle}</span>
           <span>{fmt(b.followerCount)} 粉</span>
           {duration && <span>{duration} 秒</span>}
-          <span>{relTime(b.publishedAt)}</span>
+          <span>{b.publishedAt > 0 ? relTime(b.publishedAt) : '发布时间未知'}</span>
           {rank > 0 && <span>同级榜单第 {rank} 名</span>}
         </div>
         {b.tagList.length > 0 && (
@@ -98,8 +97,8 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>
             {duration && myAvgDuration && duration < myAvgDuration * 0.7
-              ? '明显更短，短时长是高赞的常见共性'
-              : '时长不是决定因素'}
+              ? '比你的均长短至少三成，不能据此判断高赞原因'
+              : duration && myAvgDuration ? '时长相近或更长，不能单凭时长判断表现' : '缺少时长数据，暂无法比较'}
           </div>
         </div>
         <div className="cmp-row">
@@ -114,7 +113,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
                 ? '剪辑密度高，画面一直在变'
                 : rhythm.cutsPerSec > 0.08
                   ? '中等节奏'
-                  : '偏静态，靠内容本身留人'
+                  : '画面切换较少，不能据此判断留存原因'
               : '跑 npm run video 会分析'}
           </div>
         </div>
@@ -123,7 +122,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
           <div className="cmp-v">{rhythm ? `${rhythm.first3sCuts} 刀` : '未分析'}</div>
           <div className="cmp-v" style={{ color: 'var(--text2)' }}>开头有没有画面变化</div>
           <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>
-            {rhythm && rhythm.first3sCuts > 0 ? '开头就给了刺激' : '开头靠一句话撑住'}
+            {rhythm ? (rhythm.first3sCuts > 0 ? '检测到画面切换' : '未检测到画面切换') : '尚未检测，无法判断开头'}
           </div>
         </div>
         <div className="cmp-row">
@@ -136,8 +135,8 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>
             {b.comments / Math.max(b.likes, 1) > 0.05
-              ? '评论占比高，说明有争议或强提问'
-              : '看的人多、说话的人少，评论区没有被撬动'}
+              ? '评论数相对点赞较多，原因需要结合内容核实'
+              : '评论数相对点赞较少，无法仅凭比例判断原因'}
           </div>
         </div>
       </div>
@@ -145,7 +144,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
       <div className="sec-head">
         <h2>能借鉴的点</h2>
         <span className="hint">只给结构，不给文案</span>
-        {points.length === 0 && (
+        {points.length === 0 && hasLlmKey() && (
           <form action={buildTakeaway} style={{ marginLeft: 'auto' }}>
             <input type="hidden" name="id" value={b.id} />
             <button className="btn ghost" type="submit">
@@ -157,7 +156,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
 
       {points.length === 0 ? (
         <div className="card empty-sm" style={{ padding: '36px 20px', lineHeight: 1.8 }}>
-          还没拆解过。点右上角「让模型拆解」，它会基于上面的真实数据给出 4 条结构动作。
+          {hasLlmKey() ? '还没有模型拆解。点击「让模型拆解」，基于已采集指标生成可参考的建议；模型未观看视频，具体内容请打开原视频核实。' : '还没有模型拆解。配置模型 API Key 后可生成建议；也可以先打开原视频自行查看。'}
         </div>
       ) : (
         <div className="card">
@@ -175,7 +174,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
       )}
 
       <div className="note">
-        ✦ 结构可以学，文案不能抄。这里的每条都只描述「怎么组织」，不提供原句。
+        ✦ 模型建议基于已采集的数字，未必反映视频实际内容，请对照原视频核实。
       </div>
     </>
   );

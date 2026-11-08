@@ -1,7 +1,8 @@
-import { getSuggestions, getContents, getVideoComparison } from '@/db/queries';
+import { getSuggestions, getContents, getVideoComparison, getRadarSuggestionTarget } from '@/db/queries';
 import { relTime, fmt, median, interRate, MIN_SAMPLE } from '@/lib/format';
 import EmptyState from '@/components/EmptyState';
 import Evidence from '@/components/Evidence';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,9 @@ export default function AdvisorPage() {
   return (
     <>
       <div className="grid g3">
-        {cards.map((s) => (
+        {cards.map((s) => {
+          const target = getRadarSuggestionTarget(s);
+          return (
           <div className="card sugg" key={s.id}>
             <div className="sugg-head">
               <span
@@ -60,7 +63,7 @@ export default function AdvisorPage() {
                 {s.tag}
               </span>
               <span className="conf">
-                {s.source === 'llm' ? 'LLM' : '规则'} · {relTime(s.createdAt)}
+                {s.source === 'llm' ? 'AI' : s.source === 'radar' ? '爆款雷达' : '规则'} · {relTime(s.createdAt)}
               </span>
             </div>
             <h3>{s.title}</h3>
@@ -80,8 +83,9 @@ export default function AdvisorPage() {
                 {s.action}
               </span>
             </div>
+            {target ? <Link className="sugg-detail-cta" href={`/bench/${encodeURIComponent(target)}`}>查看作品详情与分析 →</Link> : s.source === 'radar' ? <div className="sync-note">原作品记录不可用</div> : null}
           </div>
-        ))}
+        ); })}
       </div>
 
       <div className="sec-head">

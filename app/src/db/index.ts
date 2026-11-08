@@ -21,6 +21,15 @@ function createDb() {
     sqlite.exec(fs.readFileSync(SCHEMA_FILE, 'utf8'));
   }
 
+  // 兼容早期数据库；多个构建进程可能同时尝试迁移。
+  for (const [table, column, type] of [['content', 'video_url', 'TEXT'], ['benchmark_content', 'video_url', 'TEXT'], ['benchmark_content', 'first_seen_at', 'INTEGER']]) {
+    const columns = () => sqlite.pragma(`table_info(${table})`) as { name: string }[];
+    if (!columns().some((c) => c.name === column)) {
+      try { sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`); }
+      catch (e) { if (!columns().some((c) => c.name === column)) throw e; }
+    }
+  }
+
   return drizzle(sqlite, { schema });
 }
 

@@ -365,8 +365,18 @@ export function getBenchmarkById(id: string) {
     platform: row.platform as Platform,
     tagList: (row.tags ?? '').split(',').filter(Boolean),
     ratio: row.followerCount ? row.likes / row.followerCount : 0,
-    url: `https://www.douyin.com/video/${row.id.replace(/^bc_/, '')}`,
+    url: row.platform === 'douyin' && /^bc_\d+$/.test(row.id)
+      ? `https://www.douyin.com/video/${row.id.slice(3)}` : null,
   };
+}
+
+/** 历史雷达建议把作品 ID 编进建议 ID；只在作品仍存在时提供详情入口。 */
+export function getRadarSuggestionTarget(s: { source: string; ruleId: string | null; targetId: string | null; id: string }): string | null {
+  if (s.source !== 'radar' || s.ruleId !== 'radar_new_viral') return null;
+  const id = s.targetId ?? (s.id.startsWith('sg_radar_bc_') ? s.id.slice('sg_radar_'.length) : null);
+  if (!id) return null;
+  const row = db.select({ id: benchmarkContent.id }).from(benchmarkContent).where(eq(benchmarkContent.id, id)).get();
+  return row?.id ?? null;
 }
 
 export function getRhythm(refType: 'content' | 'benchmark', refId: string) {
