@@ -41,7 +41,7 @@ export default async function ContentsPage({
         <EmptyState
           icon="▤"
           title="作品库还是空的"
-          desc="采集服务接通后，抖音、小红书、闲鱼的作品会自动入库，这里按播放量、互动率排序展示。"
+          desc="采集服务接通后，抖音、小红书、闲鱼的作品会自动入库，这里按播放量、点赞率排序展示。"
           steps={['先接入抖音创作者后台（数据最全）', '再补小红书和闲鱼的公开页采集']}
         />
       ) : (
@@ -57,7 +57,7 @@ export default async function ContentsPage({
               <th style={{ textAlign: 'right' }}>点赞</th>
               <th style={{ textAlign: 'right' }}>评论</th>
               <th style={{ textAlign: 'right' }}>收藏</th>
-              <th>互动率</th>
+              <th>点赞率</th>
               <th>诊断</th>
             </tr>
           </thead>
@@ -109,13 +109,13 @@ export default async function ContentsPage({
                   </td>
                   <td className="num" style={{ textAlign: 'right' }}>{fmt(c.plays)}</td>
                   <td className="num" style={{ textAlign: 'right' }}>{fmt(c.likes)}</td>
-                  <td className="num" style={{ textAlign: 'right' }}>{c.comments}</td>
+                  <td className="num" style={{ textAlign: 'right' }}>{fmt(c.comments)}</td>
                   <td className="num" style={{ textAlign: 'right' }}>{fmt(c.saves)}</td>
                   <td>
                     <div className="rate">
                       <span className="num">{rateText(c.plays, rate)}</span>
                       <div className="rate-bar">
-                        <i style={{ width: c.plays >= MIN_SAMPLE ? `${Math.min(100, rate * 12)}%` : '0%' }} />
+                        <i style={{ width: c.plays != null && c.plays >= MIN_SAMPLE && rate != null ? `${Math.min(100, rate * 12)}%` : '0%' }} />
                       </div>
                     </div>
                   </td>
@@ -143,7 +143,7 @@ export default async function ContentsPage({
       )}
 
       <div className="note">
-        诊断列由规则引擎给出，阈值可在设置页调整；点行进详情可看完整证据链。当前为 M1 阶段，详情页尚未实现。
+        诊断使用系统预设阈值，仅供参考；点作品可查看已有指标。缺失数据用“—”表示。
       </div>
     </>
   );

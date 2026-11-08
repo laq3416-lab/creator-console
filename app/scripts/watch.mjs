@@ -11,7 +11,7 @@
  *
  * 用法：npm run watch
  */
-import { spawn } from 'node:child_process';
+import { runChild } from './lib/task-runner.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openDb } from './lib/ingest.mjs';
@@ -136,13 +136,13 @@ function lastRun(task) {
 }
 
 const DEFAULT_INTERVALS = { douyin: 0, xhs: 360, xianyu: 0 };
-function platformInterval(platform) {
-  const row = db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(platform);
-  return row ? row.interval_minutes : DEFAULT_INTERVALS[platform];
+function platformInterval(task) {
+  const row = db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(`task:${task.key}`) ?? db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(task.platform);
+  return row ? row.interval_minutes : DEFAULT_INTERVALS[task.platform];
 }
 
 function isDue(task) {
-  const interval = task.platform ? platformInterval(task.platform) : null;
+  const interval = task.platform ? platformInterval(task) : null;
   if (interval === 0) return false;
   const last = lastRun(task.key);
   if (!last?.finished_at) return true;
@@ -161,47 +161,25 @@ function beat(state) {
   );
 }
 
-function runTask(task) {
-  return new Promise((resolve) => {
-    const startedAt = Date.now();
-    const ins = db
-      .prepare(`INSERT INTO job_run (task, status, started_at) VALUES (?, 'running', ?)`)
-      .run(task.key, startedAt);
-    const id = ins.lastInsertRowid;
-    const t0 = Date.now();
-
-    const child = spawn(process.execPath, [task.script, ...(task.args ?? [])], {
-      cwd: process.cwd(),
-      env: { ...process.env, SCREEN_OFF: task.needsBrowser ? '1' : '0' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    let out = '';
-    child.stdout.on('data', (d) => {
-      out += d.toString();
-      if (out.length > 20000) out = out.slice(-20000);
-    });
-    child.stderr.on('data', (d) => {
-      out += d.toString();
-      if (out.length > 20000) out = out.slice(-20000);
-    });
-
-    child.on('close', (code) => {
-      const status = code === 0 ? 'ok' : 'failed';
-      const secs = ((Date.now() - t0) / 1000).toFixed(0);
-      const tail = out.trim().split('\n').slice(-3).join(' | ').slice(0, 400);
-      db.prepare(`UPDATE job_run SET status = ?, detail = ?, finished_at = ? WHERE id = ?`).run(
-        status,
-        tail,
-        Date.now(),
-        id,
-      );
-      console.log(`  ${status === 'ok' ? '✓' : '✗'} ${task.label} ${secs}s`);
-      if (status === 'failed') console.log(`    ${tail}`);
-      resolve(status);
-    });
+async function runTask(task) {
+  const startedAt = Date.now();
+  const id = db.prepare(`INSERT INTO job_run (task, status, started_at) VALUES (?, 'running', ?)`).run(task.key, startedAt).lastInsertRowid;
+  const timeoutMs = task.key === 'video' ? 15 * MIN : 3 * MIN;
+  const result = await runChild(task.script, task.args ?? [], {
+    cwd: process.cwd(), timeoutMs,
+    env: { ...process.env, SCREEN_OFF: task.needsBrowser ? '1' : '0' },
   });
+  const status = result.ok ? 'ok' : 'failed';
+  const tail = result.output.trim().split('\n').slice(-3).join(' | ').slice(-400) || (result.signal ? `进程被 ${result.signal} 中断` : `退出码 ${result.code}`);
+  db.prepare(`UPDATE job_run SET status = ?, detail = ?, finished_at = ? WHERE id = ?`).run(status, tail, Date.now(), id);
+  console.log(`  ${result.ok ? '✓' : '✗'} ${task.label} ${Math.round((Date.now() - startedAt) / 1000)}s`);
+  if (!result.ok) console.log(`    ${tail}`);
+  return status;
 }
+
+// 旧进程退出时残留的历史记录不应永远显示“运行中”。超过最大任务时长才标为中断。
+db.prepare("UPDATE job_run SET status = 'failed', finished_at = ?, detail = '任务已中断或监控重启，未取得结果' WHERE status = 'running' AND started_at < ?")
+  .run(Date.now(), Date.now() - 20 * MIN);
 
 /* 启动时先跑一轮，然后进入循环 */
 console.log('监控启动');

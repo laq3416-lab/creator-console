@@ -69,7 +69,7 @@ export default function AccountsPage() {
 
               <div className="acc-foot">
                 <span>上次同步 {a.lastSyncedAt ? relTime(a.lastSyncedAt) : '—'}</span>
-                <span className="pill">种子数据</span>
+                <span className="pill">本机数据</span>
               </div>
             </div>
           );

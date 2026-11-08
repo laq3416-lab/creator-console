@@ -16,7 +16,7 @@ const APP = process.cwd();
 const ROOT = path.resolve(APP, '..');
 const STAGE = path.join(ROOT, '.share', '自媒体中控台');
 const OUT = path.join(ROOT, '分享包');
-const VERSION = 'v0.1.3';
+const VERSION = 'v0.1.4';
 
 const EXCLUDE = new Set([
   'node_modules',
@@ -31,7 +31,7 @@ const EXCLUDE = new Set([
 function copyDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    if (EXCLUDE.has(entry.name)) continue;
+    if (EXCLUDE.has(entry.name) || entry.name.endsWith('.tsbuildinfo') || (entry.name.startsWith('.env') && entry.name !== '.env.example')) continue;
     const s = path.join(src, entry.name);
     const d = path.join(dest, entry.name);
     if (entry.isDirectory()) copyDir(s, d);

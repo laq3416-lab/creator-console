@@ -59,8 +59,7 @@ function isNewMessage(convId, lastAt) {
 
 async function collectXianyu() {
   if (!(await hasLogin('xianyu'))) {
-    console.log('· 闲鱼未登录，跳过');
-    return;
+    throw new Error('闲鱼未登录，无法确认私信同步结果');
   }
 
   const { ctx } = await launch({ headless: HEADLESS_OK.has('xianyu'), platform: 'xianyu' });
@@ -71,8 +70,7 @@ async function collectXianyu() {
       if (!/idlemessage\.pc\.session\.sync/.test(res.url())) return;
       try {
         const j = await res.json();
-        const list = j?.data?.sessions ?? [];
-        if (list.length) sessions = list;
+        if (Array.isArray(j?.data?.sessions)) sessions = j.data.sessions;
       } catch {}
     });
   };
@@ -85,8 +83,7 @@ async function collectXianyu() {
   await ctx.close();
 
   if (!sessions) {
-    console.log('· 闲鱼没抓到会话');
-    return;
+    throw new Error('未获取到闲鱼会话响应，无法判断是否有新消息');
   }
 
   const acc = db.prepare("SELECT id FROM account WHERE platform='xianyu' LIMIT 1").get();
@@ -132,8 +129,7 @@ async function collectXianyu() {
 
 async function collectXhs() {
   if (!(await hasLogin('xhs'))) {
-    console.log('· 小红书未登录，跳过');
-    return;
+    throw new Error('小红书未登录，无法确认私信同步结果');
   }
 
   const { ctx } = await launch({ headless: HEADLESS_OK.has('xhs'), platform: 'xhs' });
@@ -144,8 +140,7 @@ async function collectXhs() {
       if (!/\/api\/im\/web\/v3\/chats/.test(res.url())) return;
       try {
         const j = await res.json();
-        const list = j?.data?.chats ?? [];
-        if (list.length && !chats) chats = list;
+        if (Array.isArray(j?.data?.chats)) chats = j.data.chats;
       } catch {}
     });
   };
@@ -172,8 +167,7 @@ async function collectXhs() {
   await ctx.close();
 
   if (!chats) {
-    console.log('· 小红书没抓到会话');
-    return;
+    throw new Error('未获取到小红书会话响应，无法判断是否有新消息');
   }
 
   const acc = db.prepare("SELECT id FROM account WHERE platform='xhs' LIMIT 1").get();
@@ -243,8 +237,7 @@ function parseDyTime(str) {
 
 async function collectDouyin() {
   if (!(await hasLogin('douyin'))) {
-    console.log('· 抖音未登录，跳过');
-    return;
+    throw new Error('抖音未登录，无法确认私信同步结果');
   }
 
   const { ctx } = await launch({ headless: HEADLESS_OK.has('douyin'), platform: 'douyin' });
@@ -259,9 +252,8 @@ async function collectDouyin() {
   } catch {}
 
   if (!opened) {
-    console.log('· 抖音没找到消息入口');
     await ctx.close();
-    return;
+    throw new Error('抖音消息入口不可用，无法确认私信同步结果');
   }
   await page.waitForTimeout(7000);
 
@@ -287,8 +279,7 @@ async function collectDouyin() {
   await ctx.close();
 
   if (!rows.length) {
-    console.log('· 抖音没读到会话');
-    return;
+    throw new Error('没有识别到抖音会话，无法判断是否有消息');
   }
 
   const acc = db.prepare("SELECT id FROM account WHERE platform='douyin' LIMIT 1").get();

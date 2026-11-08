@@ -197,6 +197,7 @@ for (const rule of rules) {
       rule.title,
       `最近一次同步在 ${value.toFixed(1)} 小时前，超过阈值 ${rule.threshold} 小时。看到的是旧数据。`,
       rule.action,
+      [{ label: '数据时间', mine: `${value.toFixed(1)} 小时`, peer: `${rule.threshold} 小时（系统阈值）` }],
       0.95,
     );
     continue;
@@ -211,7 +212,7 @@ for (const rule of rules) {
         rule,
         null,
         rule.title,
-        `近 7 天涨粉合计 ${meta.value} 人。有播放但没转化成关注，通常是结尾没有给出「为什么要关注」的具体理由。`,
+        `近 7 天涨粉合计 ${meta.value} 人。可以结合作品内容检查关注引导；仅凭这个指标不能确定原因。`,
         '结尾最后一句换成「这个系列我每周更一条，关注了才不会漏」，不要只说点赞关注',
         [{ label: '近 7 日涨粉', mine: `${meta.value} 人`, peer: '> 0' }],
         0.8,
@@ -221,7 +222,7 @@ for (const rule of rules) {
         rule,
         null,
         rule.title,
-        `最高播放 ${Math.round(meta.top)}，账号中位 ${Math.round(meta.med)}，是 ${meta.value.toFixed(1)} 倍。说明这个结构有效。`,
+        `最高播放 ${Math.round(meta.top)}，账号中位 ${Math.round(meta.med)}，是 ${meta.value.toFixed(1)} 倍。这条值得进一步复盘；播放差异不能单独证明结构是原因。`,
         '把这条的开头 3 秒逐字写下来，下一条换题材但套同一个开头句式',
         [
           { label: '最高播放', mine: String(Math.round(meta.top)), peer: `中位 ${Math.round(meta.med)}` },
@@ -250,7 +251,7 @@ for (const rule of rules) {
       rule,
       null,
       rule.title,
-      `${vals.length} 条样本的中位数是 ${fmt(med)}，同行参考 ${rule.metric_key === 'completion' ? '20-30%' : rule.metric_key === 'bounce_2s' ? '< 40%' : '> 15%'}。`,
+      `${vals.length} 条样本的中位数是 ${fmt(med)}；当前提示阈值 ${fmt(rule.threshold)} 为系统预设，不代表实测同行基准。`,
       concreteAction,
       [{ label: rule.name, mine: fmt(med), peer: fmt(rule.threshold) }],
       0.75,

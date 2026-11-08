@@ -1,4 +1,5 @@
 import { desc } from 'drizzle-orm';
+import Link from 'next/link';
 import { db } from '@/db';
 import { topic } from '@/db/schema';
 import { getContents } from '@/db/queries';
@@ -27,20 +28,6 @@ export default function TopicsPage() {
   const contentMap = new Map(contents.map((c) => [c.id, c]));
   const active = all.filter((t) => !['published', 'dropped'].includes(t.status));
 
-  if (all.length === 0) {
-    return (
-      <EmptyState
-        icon="◇"
-        title="选题库是空的"
-        desc="跑一次模型复盘，它会结合你的作品、同赛道爆款和抖音热榜给出选题；也可以直接手动加。"
-        steps={[
-          'npm run radar —— 先让库里有点同行数据',
-          'npm run analyze —— 模型综合三方信号出选题',
-          '拍完发布后关联作品，回看这条选题的实际效果',
-        ]}
-      />
-    );
-  }
 
   return (
     <>
@@ -66,6 +53,7 @@ export default function TopicsPage() {
         </button>
       </form>
 
+      {all.length === 0 && <p className="note" style={{marginBottom: 14}}>先添加一个选题，发布后可关联作品，回看实际数据。</p>}
       <div className="kanban">
         {COLS.map((col) => {
           const items = all.filter((t) => t.status === col.key);
@@ -103,10 +91,10 @@ export default function TopicsPage() {
                       <div className="kcard-linked">
                         {linked ? (
                           <>
-                            <div className="kcard-linked-title">{linked.title.slice(0, 24)}</div>
+                            <Link className="kcard-linked-title" href={`/contents/${encodeURIComponent(linked.id)}`}>{linked.title.slice(0, 24)} · 查看作品详情 →</Link>
                             <div className="kcard-linked-nums">
-                              播放 {fmt(linked.plays)} · 赞 {fmt(linked.likes)} · 互动{' '}
-                              {interRate(linked.likes, linked.plays).toFixed(1)}%
+                              播放 {fmt(linked.plays)} · 赞 {fmt(linked.likes)} · 点赞率{' '}
+                              {interRate(linked.likes, linked.plays) == null ? '—' : `${interRate(linked.likes, linked.plays)!.toFixed(1)}%`}
                               {linked.completion != null &&
                                 ` · 完播 ${(linked.completion * 100).toFixed(2)}%`}
                             </div>

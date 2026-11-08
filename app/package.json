@@ -1,13 +1,13 @@
 {
   "name": "creator-console",
   "private": true,
-  "version": "0.1.3",
+  "version": "0.1.4",
   "scripts": {
-    "go": "next build && next start -p 3300",
+    "go": "next build && next start -H 127.0.0.1 -p 3300",
     "share": "node scripts/pack-share.mjs",
     "dev": "next dev -p 3300",
     "build": "next build",
-    "start": "next start -p 3300",
+    "start": "next start -H 127.0.0.1 -p 3300",
     "watch": "node scripts/watch.mjs",
     "collect": "node scripts/collect-douyin.mjs && node scripts/run-rules.mjs",
     "collect:xhs": "node scripts/collect-xhs.mjs",
@@ -23,7 +23,8 @@
     "collect:login": "node scripts/login.mjs",
     "collect:spy": "node scripts/spy.mjs",
     "db:reset": "rm -f data/console.db data/console.db-wal data/console.db-shm",
-    "db:demo": "node src/db/demo-seed.mjs"
+    "db:demo": "node src/db/demo-seed.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

@@ -5,11 +5,19 @@ import { getJobRuns, getLastRunByTask, getNewViralSuggestions, getRadarSuggestio
 import { relTime } from '@/lib/format';
 import { WATCHER_FILE } from '@/lib/paths';
 import SyncSettings from '@/components/SyncSettings';
+import BackupButton from '@/components/BackupButton';
 
 export const dynamic = 'force-dynamic';
 
 const TASK_META: Record<string, { label: string; every: string; everyMs: number }> = {
   rules: { label: '跑规则', every: '30 分钟', everyMs: 30 * 60_000 },
+  collect: { label: '抖音作品', every: '由用户设置', everyMs: 86400000 },
+  'collect:xhs': { label: '小红书作品', every: '由用户设置', everyMs: 86400000 },
+  'collect:xianyu': { label: '闲鱼商品', every: '由用户设置', everyMs: 86400000 },
+  'inbox:xhs': { label: '小红书私信', every: '由用户设置', everyMs: 86400000 },
+  'inbox:xianyu': { label: '闲鱼私信', every: '由用户设置', everyMs: 86400000 },
+  'inbox:douyin': { label: '抖音私信', every: '由用户设置', everyMs: 86400000 },
+  radar: { label: '爆款雷达', every: '由用户设置', everyMs: 86400000 },
   analyze: { label: '模型复盘', every: '24 小时', everyMs: 24 * 3_600_000 },
 };
 
@@ -46,7 +54,7 @@ export default function MonitorPage() {
               )}
             </>
           ) : (
-            <>监控未运行 —— 开一个终端跑 <code>npm run watch</code></>
+            <>监控未运行。手动同步会尝试启动；若仍无响应，请检查账号登录状态或重启网页服务。</>
           )}
         </div>
         <div style={{ flex: 1 }} />
@@ -54,9 +62,10 @@ export default function MonitorPage() {
       </div>
 
       <SyncSettings />
+      <BackupButton />
 
       <div className="grid g4">
-        {Object.entries(TASK_META).map(([key, meta]) => {
+        {Object.entries(TASK_META).filter(([key]) => key === 'rules' || key === 'analyze').map(([key, meta]) => {
           const last = lastByTask[key];
           const ok = last?.status === 'ok';
           const overdue = last?.finishedAt
@@ -159,7 +168,7 @@ export default function MonitorPage() {
                           : {}
                     }
                   >
-                    {r.status === 'ok' ? '成功' : r.status === 'failed' ? '失败' : '运行中'}
+                    {r.status === 'ok' ? '成功' : r.status === 'failed' ? '失败' : (!alive || beat?.state !== `running:${r.task}`) ? '已中断或状态未知' : '运行中'}
                   </span>
                 </td>
                 <td className="num" style={{ color: 'var(--text3)' }}>
