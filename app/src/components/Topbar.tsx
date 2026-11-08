@@ -42,12 +42,13 @@ export default function Topbar({
         return;
       }
       // 采集约 30 秒，轮询到结束
-      for (let i = 0; i < 40; i++) {
+      let stoppedStatus: string | null = null;
+      for (let i = 0; i < 150; i++) {
         await new Promise((res) => setTimeout(res, 2000));
         const st = await fetch('/api/refresh').then((x) => x.json());
-        if (!st.refreshing) break;
+        if (!st.refreshing) { stoppedStatus = st.status; break; }
       }
-      setTip('已更新');
+      setTip(stoppedStatus === 'ok' ? '采集完成' : '采集未完成，请查看监控');
       router.refresh();
     } catch {
       setTip('失败，看终端');

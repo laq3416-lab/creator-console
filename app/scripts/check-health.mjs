@@ -36,7 +36,13 @@ function count(table, platform) {
   return db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n;
 }
 
-const PLATFORM_LOGIN = { collect: 'douyin', 'collect:xhs': 'xhs', 'collect:xianyu': 'xianyu' };
+const PLATFORM_LOGIN = { collect: 'douyin', 'collect:xhs': 'xhs', 'collect:xianyu': 'xianyu', 'inbox:douyin': 'douyin', 'inbox:xhs': 'xhs', 'inbox:xianyu': 'xianyu', radar: 'douyin' };
+const DEFAULT_INTERVALS = { douyin: 0, xhs: 360, xianyu: 0 };
+function intervalFor(task) {
+  const platform = PLATFORM_LOGIN[task.key];
+  const row = db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(platform);
+  return (row ? row.interval_minutes : DEFAULT_INTERVALS[platform]) * MIN;
+}
 
 const problems = [];
 
@@ -65,23 +71,24 @@ for (const t of TASKS) {
   }
 
   // 2) 太久没成功
-  if (last?.finished_at && last.status === 'ok') {
+  const expectedInterval = intervalFor(t);
+  if (expectedInterval && last?.finished_at && last.status === 'ok') {
     const age = NOW - last.finished_at;
-    if (age > t.every * 2) {
+    if (age > expectedInterval * 2) {
       problems.push({
         id: `health_stale_${t.key}`,
         severity: 'amber',
         title: `${t.label}已经 ${Math.round(age / HOUR)} 小时没成功`,
-        rationale: `预期每 ${Math.round(t.every / MIN)} 分钟跑一次，现在超期 ${Math.round(age / t.every)} 倍。`,
+        rationale: `预期每 ${Math.round(expectedInterval / MIN)} 分钟跑一次，现在超期 ${Math.round(age / expectedInterval)} 倍。`,
         action: '检查监控进程是否还在（看「监控」页的心跳）',
-        evidence: [{ label: '距上次成功', mine: `${Math.round(age / HOUR)} 小时`, peer: `≤ ${Math.round(t.every / MIN)} 分钟` }],
+        evidence: [{ label: '距上次成功', mine: `${Math.round(age / HOUR)} 小时`, peer: `≤ ${Math.round(expectedInterval / MIN)} 分钟` }],
       });
     }
   }
 
   // 3) 采集到 0 条
   const n = t.expect();
-  if (n === 0) {
+  if (n === 0 && last) {
     problems.push({
       id: `health_empty_${t.key}`,
       severity: 'red',

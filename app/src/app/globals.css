@@ -480,3 +480,12 @@ tbody tr:hover { background: var(--surface2); }
   animation: toastIn 0.2s ease;
 }
 @keyframes toastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.sync-row { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(190px, auto) auto; gap: 16px; align-items: center; padding: 14px 0; border-top: 1px solid var(--border2); }
+.sync-note { margin-top: 4px; color: var(--text2); font-size: 12px; }
+.sync-row label { color: var(--text2); font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.sync-row select, .sync-row button { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; }
+.sync-row select:focus-visible, .sync-row button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sync-row button:disabled, .sync-row select:disabled { opacity: .55; cursor: default; }
+.sync-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 800px) { .sync-row { grid-template-columns: 1fr; gap: 10px; } }

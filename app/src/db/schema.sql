@@ -206,3 +206,7 @@ CREATE TABLE IF NOT EXISTS benchmark_product (
   url           TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_bp_keyword ON benchmark_product(keyword, first_seen_at DESC);
+
+-- 用户的同步频率（分钟；0 表示手动）和等待调度的请求
+CREATE TABLE IF NOT EXISTS sync_setting (platform TEXT PRIMARY KEY, interval_minutes INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS sync_request (task TEXT PRIMARY KEY, requested_at INTEGER NOT NULL);

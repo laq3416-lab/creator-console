@@ -135,15 +135,25 @@ function lastRun(task) {
     .get(task);
 }
 
+const DEFAULT_INTERVALS = { douyin: 0, xhs: 360, xianyu: 0 };
+function platformInterval(platform) {
+  const row = db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(platform);
+  return row ? row.interval_minutes : DEFAULT_INTERVALS[platform];
+}
+
 function isDue(task) {
+  const interval = task.platform ? platformInterval(task.platform) : null;
+  if (interval === 0) return false;
   const last = lastRun(task.key);
   if (!last?.finished_at) return true;
   // 失败的任务 10 分钟后重试，不要按整天等
-  if (last.status === 'failed') return Date.now() - last.finished_at > 10 * MIN;
-  return Date.now() - last.finished_at >= task.every;
+  if (last.status === 'failed' && !task.platform) return Date.now() - last.finished_at > 10 * MIN;
+  return Date.now() - last.finished_at >= (interval != null ? interval * MIN : task.every);
 }
 
+let currentState = 'idle';
 function beat(state) {
+  currentState = state;
   fs.mkdirSync(path.dirname(BEAT), { recursive: true });
   fs.writeFileSync(
     BEAT,
@@ -206,12 +216,20 @@ async function tick() {
   running = true;
   try {
     for (const task of TASKS) {
-      if (task.enabled === false || !isDue(task)) continue;
-      // 需要浏览器的任务，没登录就跳过，别每 30 分钟弹一次窗口
-      if (task.needsBrowser && !(await hasLogin(task.platform))) continue;
+      const requested = db.prepare('SELECT requested_at FROM sync_request WHERE task = ?').get(task.key);
+      if (!requested && (task.enabled === false || !isDue(task))) continue;
+      if (task.needsBrowser && !(await hasLogin(task.platform))) {
+        if (requested) {
+          const now = Date.now();
+          db.prepare("INSERT INTO job_run (task, status, started_at, finished_at, detail) VALUES (?, 'failed', ?, ?, ?)").run(task.key, now, now, '未检测到登录，请先登录对应平台');
+          db.prepare('DELETE FROM sync_request WHERE task = ? AND requested_at = ?').run(task.key, requested.requested_at);
+        }
+        continue;
+      }
       beat('running:' + task.key);
       console.log(`▶ ${task.label}`);
       await runTask(task);
+      if (requested) db.prepare('DELETE FROM sync_request WHERE task = ? AND requested_at = ?').run(task.key, requested.requested_at);
       beat('idle');
     }
   } catch (e) {
@@ -222,6 +240,8 @@ async function tick() {
   }
 }
 
+beat('idle');
+setInterval(() => beat(currentState), 60_000);
 await tick();
 setInterval(tick, 60_000);
 

@@ -38,6 +38,22 @@ export async function launch({ headless = false, platform = 'douyin' } = {}) {
         ignoreDefaultArgs: ['--enable-automation'],
       });
       ctx.setDefaultTimeout(45000);
+      // macOS may clamp off-screen coordinates back onto the visible display.
+      // Minimize only unattended collection windows; interactive login stays visible.
+      if (process.env.SCREEN_OFF === '1' && !headless) {
+        const page = ctx.pages()[0] ?? await ctx.newPage();
+        try {
+          const session = await ctx.newCDPSession(page);
+          try {
+          const { windowId } = await session.send('Browser.getWindowForTarget');
+          await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'minimized' } });
+          } finally {
+            await session.detach();
+          }
+        } catch (e) {
+          console.warn('无法最小化后台窗口，继续采集:', e.message);
+        }
+      }
       return { ctx, channel };
     } catch (e) {
       errors.push(`  ${channel}: ${e.message.split('\n')[0]}`);

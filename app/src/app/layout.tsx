@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
-import AutoRefresh from '@/components/AutoRefresh';
 import Topbar from '@/components/Topbar';
 import { getNavCounts, getLastSyncedAt } from '@/db/queries';
 import { relTime } from '@/lib/format';
@@ -68,7 +67,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               nickname={primary?.nickname ?? null}
             />
             <div className="content">{children}</div>
-            <AutoRefresh />
           </main>
         </div>
       </body>

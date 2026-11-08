@@ -1,46 +1,19 @@
 import { NextResponse } from 'next/server';
-import { spawn } from 'node:child_process';
-import path from 'node:path';
+import { db } from '@/db';
 import { getLastSyncedAt } from '@/db/queries';
-import { watcherAlive } from '@/lib/watcher-boot';
+import { hasLogin } from '@/lib/douyin-login';
+import { ensureWatcher, watcherAlive } from '@/lib/watcher-boot';
 
 export const dynamic = 'force-dynamic';
-
-let running = false;
-
-/** 状态：数据有多旧、监控活着没 */
 export async function GET() {
   const last = getLastSyncedAt();
-  return NextResponse.json({
-    lastSyncedAt: last,
-    ageMinutes: last ? Math.round((Date.now() - last) / 60000) : null,
-    watcherAlive: watcherAlive(),
-    refreshing: running,
-  });
+  const pending = db.$client.prepare("SELECT 1 FROM sync_request WHERE task='collect'").get();
+  const job = db.$client.prepare("SELECT status FROM job_run WHERE task='collect' ORDER BY started_at DESC LIMIT 1").get() as {status: string} | undefined;
+  return NextResponse.json({ lastSyncedAt: last, ageMinutes: last ? Math.round((Date.now()-last)/60000) : null, watcherAlive: watcherAlive(), refreshing: Boolean(pending), status: job?.status ?? null });
 }
-
-/** 手动点刷新：只跑采集 + 规则，很快；扫对标和复盘交给监控自己按节奏跑 */
 export async function POST() {
-  if (running) return NextResponse.json({ started: false, reason: '已经在跑了' });
-  running = true;
-
-  const script = path.join(process.cwd(), 'scripts', 'collect-douyin.mjs');
-  const child = spawn(process.execPath, [script], {
-    cwd: process.cwd(),
-    env: { ...process.env, SCREEN_OFF: '1' },
-    stdio: 'ignore',
-    detached: true,
-  });
-  child.unref();
-
-  child.on('error', () => { running = false; });
-  child.on('exit', (code) => {
-    if (code === 0) spawn(process.execPath, [path.join(process.cwd(), 'scripts', 'run-rules.mjs')], {
-      cwd: process.cwd(),
-      stdio: 'ignore',
-    });
-    running = false;
-  });
-
-  return NextResponse.json({ started: true });
+  if (!hasLogin('douyin')) return NextResponse.json({ started: false, reason: '请先登录抖音；其他平台请在监控页同步' });
+  ensureWatcher();
+  const result = db.$client.prepare("INSERT OR IGNORE INTO sync_request (task, requested_at) VALUES ('collect', ?)").run(Date.now());
+  return NextResponse.json({ started: Boolean(result.changes), reason: result.changes ? null : '抖音采集已在队列中' });
 }

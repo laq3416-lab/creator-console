@@ -4,13 +4,12 @@ import Link from 'next/link';
 import { getJobRuns, getLastRunByTask, getNewViralSuggestions } from '@/db/queries';
 import { relTime } from '@/lib/format';
 import { WATCHER_FILE } from '@/lib/paths';
+import SyncSettings from '@/components/SyncSettings';
 
 export const dynamic = 'force-dynamic';
 
 const TASK_META: Record<string, { label: string; every: string; everyMs: number }> = {
-  collect: { label: '采集自己的数据', every: '30 分钟', everyMs: 30 * 60_000 },
   rules: { label: '跑规则', every: '30 分钟', everyMs: 30 * 60_000 },
-  radar: { label: '扫同赛道爆款', every: '6 小时', everyMs: 6 * 3_600_000 },
   analyze: { label: '模型复盘', every: '24 小时', everyMs: 24 * 3_600_000 },
 };
 
@@ -42,7 +41,7 @@ export default function MonitorPage() {
               监控运行中 · 心跳 {beat!.ageSec} 秒前
               {beat!.state?.startsWith('running:') && (
                 <span style={{ marginLeft: 8, color: 'var(--accent)' }}>
-                  正在 {TASK_META[beat!.state.split(':')[1]]?.label ?? beat!.state}
+                  正在 {TASK_META[beat!.state.slice('running:'.length)]?.label ?? beat!.state}
                 </span>
               )}
             </>
@@ -53,6 +52,8 @@ export default function MonitorPage() {
         <div style={{ flex: 1 }} />
         <span className="pill">每 60 秒检查一次</span>
       </div>
+
+      <SyncSettings />
 
       <div className="grid g4">
         {Object.entries(TASK_META).map(([key, meta]) => {
@@ -129,7 +130,7 @@ export default function MonitorPage() {
 
       <div className="sec-head">
         <h2>运行记录</h2>
-        <span className="hint">任务失败不会让监控停，10 分钟后重试</span>
+        <span className="hint">可在此查看同步结果；手动请求会按顺序处理</span>
       </div>
       <div className="card tbl-wrap">
         <table>
@@ -185,8 +186,7 @@ export default function MonitorPage() {
       </div>
 
       <div className="note">
-        ✦ 监控不是「跑一次给你份报告」。它每 30 分钟看你自己、每 6 小时看同行，
-        有新爆款才提醒；规则命中立刻出卡。关掉终端就停，重开自动接上。
+        ✦ 手动同步会排队，监控每分钟检查一次；正在运行的任务结束后才会处理下一个。
       </div>
     </>
   );

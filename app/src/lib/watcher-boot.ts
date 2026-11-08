@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { WATCHER_FILE } from './paths';
-import { hasDouyinLogin } from './douyin-login';
+import { hasLogin } from './douyin-login';
 
 const HEARTBEAT_FRESH_MS = 180_000;
 
@@ -27,7 +27,7 @@ export function ensureWatcher(): void {
   if (process.env.CONSOLE_NO_WATCH === '1') return;
   if (watcherAlive()) return;
   // 还没登录就先不起：新用户第一次打开不该被弹浏览器
-  if (!hasDouyinLogin()) return;
+  if (!(['douyin', 'xhs', 'xianyu'] as const).some(hasLogin)) return;
 
   const script = path.join(process.cwd(), 'scripts', 'watch.mjs');
   if (!fs.existsSync(script)) return;

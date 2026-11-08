@@ -77,7 +77,7 @@ export default function SetupPage() {
       if (!s.refreshing) {
         clearInterval(t);
         setBusy('');
-        setMsg('采集完成');
+        setMsg(s.status === 'ok' ? '采集完成' : '采集未成功，请查看监控记录');
         load();
       }
     }, 2000);
