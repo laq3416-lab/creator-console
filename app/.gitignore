@@ -7,3 +7,5 @@ data/
 .env*
 !.env.example
 next-env.d.ts
+
+*.tsbuildinfo

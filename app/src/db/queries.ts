@@ -84,13 +84,14 @@ export function getContents(platform?: Platform) {
   const stats = getContentStats(rows.map((r) => r.id));
   return rows.map((r) => {
     const s = stats.get(r.id) ?? {};
+    const metric = (key: string): number | null => Object.hasOwn(s, key) ? s[key] : null;
     return {
       ...r,
-      plays: s.plays ?? 0,
-      likes: s.likes ?? 0,
-      comments: s.comments ?? 0,
-      saves: s.saves ?? 0,
-      completion: s.completion ?? null,
+      plays: metric('plays'),
+      likes: metric('likes'),
+      comments: metric('comments'),
+      saves: metric('saves'),
+      completion: metric('completion'),
     };
   });
 }
@@ -467,6 +468,9 @@ export function getContentDetail(id: string) {
   const row = db.select().from(content).where(eq(content.id, id)).get();
   if (!row) return null;
   const stats = getContentStats([id]).get(id) ?? {};
+  const metricTimes: Record<string, number> = {};
+  for (const point of db.select({key: metricPoint.key, capturedAt: metricPoint.capturedAt}).from(metricPoint).where(and(eq(metricPoint.entityType, 'content'), eq(metricPoint.entityId, id))).orderBy(metricPoint.capturedAt).all()) metricTimes[point.key] = point.capturedAt;
+  const metric = (key: string): number | null => Object.hasOwn(stats, key) ? stats[key] : null;
   const rhythm = getRhythm('content', id);
   const related = db
     .select()
@@ -479,17 +483,18 @@ export function getContentDetail(id: string) {
   return {
     ...row,
     stats: {
-      plays: stats.plays ?? 0,
-      likes: stats.likes ?? 0,
-      comments: stats.comments ?? 0,
-      saves: stats.saves ?? 0,
-      shares: stats.shares ?? 0,
-      completion: stats.completion ?? null,
+      plays: metric('plays'),
+      likes: metric('likes'),
+      comments: metric('comments'),
+      saves: metric('saves'),
+      shares: metric('shares'),
+      completion: metric('completion'),
       completion5s: stats.completion_5s ?? null,
       bounce2s: stats.bounce_2s ?? null,
       avgViewSec: stats.avg_view_sec ?? null,
       exposure: stats.exposure ?? null,
     },
+    metricTimes,
     rhythm: rhythm ?? null,
     related,
   };

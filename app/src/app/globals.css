@@ -499,3 +499,8 @@ tbody tr:hover { background: var(--surface2); }
 .sugg:has(.sugg-detail-cta) { position: relative; }
 .sugg-detail-cta::after { content: ''; position: absolute; inset: 0; }
 .sugg:has(.sugg-detail-cta):hover { border-color: var(--accent); }
+
+.sync-row { grid-template-columns: minmax(180px, 1fr) minmax(300px, 2fr); }
+.sync-task-controls { display: grid; gap: 8px; }
+.sync-task { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+@media (max-width: 800px) { .sync-row { grid-template-columns: 1fr; } .sync-task { justify-content: space-between; flex-wrap: wrap; } }

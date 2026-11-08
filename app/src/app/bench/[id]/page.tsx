@@ -20,7 +20,7 @@ export default async function BenchDetail({ params }: { params: Promise<{ id: st
   const peers = getBenchmarkRows('peer');
   const rank = peers.findIndex((p) => p.id === id) + 1;
 
-  const mine = getContents().filter((c) => c.plays >= 100);
+  const mine = getContents().filter((c) => (c.plays ?? 0) >= 100);
   const myAvgDuration = mine.length
     ? Math.round(mine.reduce((s, c) => s + (c.durationSec ?? 0), 0) / mine.length)
     : null;

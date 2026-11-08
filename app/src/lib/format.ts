@@ -6,8 +6,8 @@ export const PLATFORMS: Record<Platform, { name: string; short: string; cssVar: 
   xianyu: { name: '闲鱼', short: '闲', cssVar: '--xy' },
 };
 
-export function fmt(n: number): string {
-  if (!Number.isFinite(n)) return '—';
+export function fmt(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—';
   if (Math.abs(n) >= 10000) {
     return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
   }
@@ -44,8 +44,8 @@ export function clockTime(ts: number): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export function interRate(likes: number, plays: number): number {
-  if (!plays) return 0;
+export function interRate(likes: number | null, plays: number | null): number | null {
+  if (likes == null || plays == null || plays <= 0) return null;
   return (likes / plays) * 100;
 }
 
@@ -58,16 +58,16 @@ export const MIN_SAMPLE = 100;
 
 export type Verdict = { label: string; tone: 'red' | 'green' | 'muted' };
 
-export function diagnose(plays: number, rate: number): Verdict {
-  if (!plays) return { label: '无数据', tone: 'muted' };
+export function diagnose(plays: number | null, rate: number | null): Verdict {
+  if (plays == null || rate == null) return { label: '无数据', tone: 'muted' };
   if (plays < MIN_SAMPLE) return { label: '样本不足', tone: 'muted' };
   if (rate < 3.5) return { label: '待优化', tone: 'red' };
   if (rate > 6) return { label: '可复用', tone: 'green' };
   return { label: '正常', tone: 'muted' };
 }
 
-export function rateText(plays: number, rate: number): string {
-  if (!plays) return '—';
+export function rateText(plays: number | null, rate: number | null): string {
+  if (plays == null || rate == null) return '—';
   if (plays < MIN_SAMPLE) return '—';
   return `${rate.toFixed(1)}%`;
 }

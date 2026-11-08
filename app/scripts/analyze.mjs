@@ -118,7 +118,6 @@ const payload = {
   peer_viral: peers,
   hot_topics: trends,
   video_rhythm: videoRhythm,
-  references: { completion_good: '20-30%', completion_bad: '<10%', bounce_2s_good: '<40%', bounce_2s_bad: '>50%' },
 };
 
 /* ---------- prompt ---------- */
@@ -129,7 +128,7 @@ const SYSTEM = `你是抖音内容策略顾问。根据提供的作品内容和�
 1. 每条建议必须有 evidence 数组，至少一条，格式 {"label":"指标名","mine":"我的真实值","peer":"同行基准值"}，数字必须来自我给的数据
 2. action 必须能直接执行：写到第几句、第几秒、换什么镜头、标题怎么改。禁止「优化」「提升」「加强」「丰富」这类没有对象的动词
 3. rationale 必须说清差距在哪，引用具体数字
-4. 没数据支撑的维度不写`;
+4. 没数据支撑的维度不写；不假定因果，不把系统阈值写成同行统计，推测要标明假设。`;
 
 const USER = `数据：
 

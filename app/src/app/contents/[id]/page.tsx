@@ -14,11 +14,12 @@ export default async function ContentDetail({ params }: { params: Promise<{ id: 
   const plat = PLATFORMS[c.platform as Platform];
   const rate = interRate(c.stats.likes, c.stats.plays);
 
+  const sourceTime = (key: string) => c.metricTimes[key] ? `最近采集：${new Date(c.metricTimes[key]).toLocaleString('zh-CN', { hour12: false })}` : '未获取';
   const metrics: { label: string; value: string; hint?: string }[] = [
-    { label: c.platform === 'xianyu' ? '浏览' : '播放', value: fmt(c.stats.plays) },
-    { label: '点赞', value: fmt(c.stats.likes) },
-    { label: '评论', value: fmt(c.stats.comments) },
-    { label: '收藏', value: fmt(c.stats.saves) },
+    { label: c.platform === 'xianyu' ? '浏览' : '播放', value: fmt(c.stats.plays), hint: sourceTime('plays') },
+    { label: '点赞', value: fmt(c.stats.likes), hint: sourceTime('likes') },
+    { label: '评论', value: fmt(c.stats.comments), hint: sourceTime('comments') },
+    { label: '收藏', value: fmt(c.stats.saves), hint: sourceTime('saves') },
   ];
 
   const deep: { label: string; value: string; good?: boolean }[] = [];
@@ -62,7 +63,7 @@ export default async function ContentDetail({ params }: { params: Promise<{ id: 
           <span>{c.type === 'video' ? '视频' : c.type === 'note' ? '图文' : '商品'}</span>
           {c.durationSec ? <span>{c.durationSec} 秒</span> : null}
           <span>{relTime(c.publishedAt)}</span>
-          <span>互动率 {c.stats.plays ? `${rate.toFixed(1)}%` : '—'}</span>
+          <span>点赞率 {rate != null ? `${rate.toFixed(1)}%` : '—'}</span>
         </div>
       </div>
 
@@ -73,6 +74,7 @@ export default async function ContentDetail({ params }: { params: Promise<{ id: 
             <div className="kpi-value" style={{ fontSize: 22 }}>
               {m.value}
             </div>
+            <div className="kpi-meta">{m.hint}</div>
           </div>
         ))}
       </div>

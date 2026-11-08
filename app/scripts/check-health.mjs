@@ -40,7 +40,7 @@ const PLATFORM_LOGIN = { collect: 'douyin', 'collect:xhs': 'xhs', 'collect:xiany
 const DEFAULT_INTERVALS = { douyin: 0, xhs: 360, xianyu: 0 };
 function intervalFor(task) {
   const platform = PLATFORM_LOGIN[task.key];
-  const row = db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(platform);
+  const row = db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(`task:${task.key}`) ?? db.prepare('SELECT interval_minutes FROM sync_setting WHERE platform = ?').get(platform);
   return (row ? row.interval_minutes : DEFAULT_INTERVALS[platform]) * MIN;
 }
 
@@ -88,7 +88,7 @@ for (const t of TASKS) {
 
   // 3) 采集到 0 条
   const n = t.expect();
-  if (n === 0 && last) {
+  if (n === 0 && last?.status === 'ok' && !t.key.startsWith('inbox:')) {
     problems.push({
       id: `health_empty_${t.key}`,
       severity: 'red',

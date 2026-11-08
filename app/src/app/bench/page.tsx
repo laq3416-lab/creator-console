@@ -41,7 +41,7 @@ export default async function BenchPage({
 
   const accounts = getAccounts();
   const myFans = accounts.reduce((s, a) => s + a.followerCount, 0);
-  const myContents = getContents().filter((c) => c.plays >= 100);
+  const myContents = getContents().filter((c): c is typeof c & { plays: number; likes: number } => c.plays != null && c.plays >= 100 && c.likes != null);
   const myBest = [...myContents].sort((a, b) => b.likes - a.likes)[0];
 
   // 「我的作品」这一栏直接用自己库里的数据，不用对标表
@@ -86,7 +86,7 @@ export default async function BenchPage({
   }
 
   const myRatio = myBest && myFans ? myBest.likes / myFans : 0;
-  const myCommentPerFan = myBest && myFans ? myBest.comments / myFans : 0;
+  const myCommentPerFan = myBest?.comments != null && myFans ? myBest.comments / myFans : null;
 
   const pct = (mine: number, bench: number) => {
     if (!bench) return 50;
@@ -106,12 +106,12 @@ export default async function BenchPage({
         },
         {
           d: '评论 / 粉丝',
-          mine: `${myCommentPerFan.toFixed(2)}`,
+          mine: myCommentPerFan == null ? '—' : myCommentPerFan.toFixed(2),
           bench: `${(median.commentPerFan ?? 0).toFixed(2)}`,
-          v: myCommentPerFan < (median.commentPerFan ?? 0) ? '偏低' : '达标',
-          bad: myCommentPerFan < (median.commentPerFan ?? 0),
-          w: pct(myCommentPerFan, median.commentPerFan ?? 0),
-          pending: false,
+          v: myCommentPerFan == null ? '缺少数据' : myCommentPerFan < (median.commentPerFan ?? 0) ? '偏低' : '达标',
+          bad: myCommentPerFan != null && myCommentPerFan < (median.commentPerFan ?? 0),
+          w: myCommentPerFan == null ? 0 : pct(myCommentPerFan, median.commentPerFan ?? 0),
+          pending: myCommentPerFan == null,
         },
         {
           d: '视频时长',

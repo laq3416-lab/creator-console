@@ -11,8 +11,8 @@ export default function AdvisorPage() {
   const contents = getContents();
   const vc = getVideoComparison();
 
-  const withStats = contents.filter((c) => c.plays >= MIN_SAMPLE);
-  const byPlays = [...withStats].sort((a, b) => b.plays - a.plays);
+  const withStats = contents.filter((c) => (c.plays ?? 0) >= MIN_SAMPLE);
+  const byPlays = [...withStats].sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0));
   const best = byPlays[0];
   const worst = byPlays[byPlays.length - 1];
   const medCompletion = median(
@@ -47,6 +47,7 @@ export default function AdvisorPage() {
 
   return (
     <>
+      <div className="note" style={{ marginBottom: 16 }}>规则阈值是系统预设，不代表已测得的同行基准；历史建议可能沿用旧表述。AI 建议是基于现有数据的推测，请结合原作品核实。</div>
       <div className="grid g3">
         {cards.map((s) => {
           const target = getRadarSuggestionTarget(s);
@@ -115,14 +116,14 @@ export default function AdvisorPage() {
                 <li>
                   <b style={{ color: 'var(--green)' }}>▲ {best.title.slice(0, 22)}</b>
                   <br />
-                  播放 {fmt(best.plays)} · 互动率 {interRate(best.likes, best.plays).toFixed(1)}%
+                  播放 {fmt(best.plays)} · 点赞率 {interRate(best.likes, best.plays) == null ? '—' : `${interRate(best.likes, best.plays)!.toFixed(1)}%`}
                   {best.completion != null && ` · 完播 ${(best.completion * 100).toFixed(2)}%`}
                 </li>
                 {worst && worst.id !== best.id && (
                   <li>
                     <b style={{ color: 'var(--red)' }}>▼ {worst.title.slice(0, 22)}</b>
                     <br />
-                    播放 {fmt(worst.plays)} · 互动率 {interRate(worst.likes, worst.plays).toFixed(1)}%
+                    播放 {fmt(worst.plays)} · 点赞率 {interRate(worst.likes, worst.plays) == null ? '—' : `${interRate(worst.likes, worst.plays)!.toFixed(1)}%`}
                     {worst.completion != null && ` · 完播 ${(worst.completion * 100).toFixed(2)}%`}
                   </li>
                 )}
@@ -157,7 +158,7 @@ export default function AdvisorPage() {
               <li>
                 完播率中位{' '}
                 <b>{medCompletion != null ? `${(medCompletion * 100).toFixed(2)}%` : '—'}</b>
-                <span style={{ color: 'var(--text3)' }}>　短视频参考线 20–30%</span>
+                <span style={{ color: 'var(--text3)' }}>　暂无经过验证的同行参考线</span>
               </li>
               <li>
                 时长中位 <b>{avgDuration ? `${Math.round(avgDuration)} 秒` : '—'}</b>
@@ -247,8 +248,7 @@ export default function AdvisorPage() {
       </div>
 
       <div className="note">
-        ✦ 上面这些全部是从指标算出来的，没有一条是编的。规则引擎负责「哪条出事了」，
-        大模型接上之后才负责「为什么、下一步做什么」——现在还不写这部分。
+        ✦ 规则提示和 AI 建议不能单独证明原因；请结合原作品、样本量和采集时间核实。
       </div>
     </>
   );

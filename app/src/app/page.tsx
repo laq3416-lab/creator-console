@@ -44,47 +44,45 @@ export default function DashboardPage() {
   }
 
   const totalFans = accounts.reduce((a, b) => a + b.followerCount, 0);
-  const todayPlays = accounts.reduce((a, b) => a + (b.playsSeries.at(-1) ?? 0), 0);
-  const yesterdayPlays = accounts.reduce((a, b) => a + (b.playsSeries.at(-2) ?? 0), 0);
-  const playDelta = yesterdayPlays ? ((todayPlays - yesterdayPlays) / yesterdayPlays) * 100 : 0;
+  const availablePlays = accounts.map((a) => a.playsSeries.at(-1)).filter((n): n is number => n != null);
+  const todayPlays = availablePlays.length ? availablePlays.reduce((a, b) => a + b, 0) : null;
   // 涨粉是日增量，粉丝总数只有当前值，所以「今日涨粉」取各账号最新一天的增量
-  const gainToday = accounts.reduce((a, b) => a + (b.gainSeries.at(-1) ?? 0), 0);
-  const gainAgg = Array.from({ length: 7 }, (_, i) =>
-    accounts.reduce((sum, a) => sum + (a.gainSeries[i] ?? 0), 0),
-  );
+  const gains = accounts.map((a) => a.gainSeries.at(-1)).filter((n): n is number => n != null);
+  const gainToday = gains.length ? gains.reduce((a, b) => a + b, 0) : null;
+
   const redCount = suggestions.filter((s) => s.severity === 'red' && s.status === 'new').length;
   const unreadOf = (platform: string) =>
     accounts.filter((a) => a.platform === platform).reduce((sum, a) => sum + (unreadByAccount[a.id] ?? 0), 0);
   const alerts = suggestions.filter((s) => s.source === 'rule').slice(0, 3);
-  const topContents = [...contents].sort((a, b) => b.plays - a.plays).slice(0, 5);
+  const topContents = [...contents].sort((a, b) => (b.plays ?? -1) - (a.plays ?? -1)).slice(0, 5);
   const dy = accounts.find((a) => a.platform === 'douyin');
 
   const kpis = [
     {
       label: '全网粉丝',
       value: fmt(totalFans),
-      trend: `+${gainToday}`,
+      trend: gainToday == null ? null : `${gainToday >= 0 ? '+' : ''}${gainToday}`,
       up: true,
-      note: '最近一日涨粉',
-      series: gainAgg,
+      note: '最近可用涨粉指标合计，可能不含所有账号',
+      series: [],
       color: 'var(--accent)',
     },
     {
-      label: '今日播放',
+      label: '最近可用播放',
       value: fmt(todayPlays),
-      trend: `${playDelta >= 0 ? '+' : ''}${playDelta.toFixed(1)}%`,
-      up: playDelta >= 0,
-      note: '较昨日',
-      series: dy?.playsSeries ?? [],
+      trend: null,
+      up: true,
+      note: '账号最近可用数据合计，采集时间可能不同',
+      series: [],
       color: 'var(--accent)',
     },
     {
-      label: '未读消息',
+      label: '已知未读消息',
       value: String(counts.unread),
       trend: null,
       up: true,
-      note: `三平台 · 抖音 ${unreadOf('douyin')} / 小红书 ${unreadOf('xhs')} / 闲鱼 ${unreadOf('xianyu')}`,
-      series: [6, 9, 7, 11, 9, 14, 19],
+      note: `部分平台不提供未读数 · 闲鱼 ${unreadOf('xianyu')}`,
+      series: [],
       color: 'var(--amber)',
     },
     {
@@ -93,7 +91,7 @@ export default function DashboardPage() {
       trend: null,
       up: true,
       note: `${redCount} 条高危`,
-      series: [1, 0, 2, 1, 3, 2, 4],
+      series: [],
       color: 'var(--red)',
     },
   ];;
@@ -154,7 +152,7 @@ export default function DashboardPage() {
                     </>
                   ) : (
                     <>
-                      <b>{fmt(a.playsSeries.at(-1) ?? 0)}</b>
+                      <b>{fmt(a.playsSeries.at(-1))}</b>
                       <span>今日播放</span>
                     </>
                   )}
@@ -214,7 +212,7 @@ export default function DashboardPage() {
         </div>
         <div className="card chart-wrap">
           <div className="chart-head">
-            <span className="chart-val">{fmt(dy?.playsSeries.at(-1) ?? 0)}</span>
+            <span className="chart-val">{fmt(dy?.playsSeries.at(-1))}</span>
             <span className="trend up">+12.4%</span>
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--text3)', marginBottom: 6 }}>
@@ -255,7 +253,7 @@ export default function DashboardPage() {
               <th>点赞</th>
               <th>评论</th>
               <th>收藏</th>
-              <th>互动率</th>
+              <th>点赞率</th>
             </tr>
           </thead>
           <tbody>
@@ -277,13 +275,13 @@ export default function DashboardPage() {
                   </td>
                   <td className="num">{fmt(c.plays)}</td>
                   <td className="num">{fmt(c.likes)}</td>
-                  <td className="num">{c.comments}</td>
+                  <td className="num">{fmt(c.comments)}</td>
                   <td className="num">{fmt(c.saves)}</td>
                   <td>
                     <div className="rate">
-                      <span className="num">{rate.toFixed(1)}%</span>
+                      <span className="num">{rate == null ? '—' : `${rate.toFixed(1)}%`}</span>
                       <div className="rate-bar">
-                        <i style={{ width: `${Math.min(100, rate * 12)}%` }} />
+                        <i style={{ width: `${Math.min(100, (rate ?? 0) * 12)}%` }} />
                       </div>
                     </div>
                   </td>

@@ -1,3 +1,4 @@
+import { isLocalWrite } from '@/lib/local-request';
 import { NextResponse } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -6,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /** 保存 API Key 到 .env.local，并立即在当前进程生效 */
 export async function POST(req: Request) {
+  if (!isLocalWrite(req)) return NextResponse.json({ error: '请求来源不允许' }, { status: 403 });
   const body = await req.json().catch(() => ({}));
   const key = String(body?.key ?? '').trim();
 
