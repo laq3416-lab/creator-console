@@ -5,7 +5,7 @@
 
 数据和登录态默认保存在本机。启用 AI 复盘或选题时，相关账号信息、作品标题和指标会发送给所配置的模型服务商（默认 DeepSeek）。
 
-[**⬇ 下载 v0.1.4**](https://github.com/laq3416-lab/creator-console/releases/latest/download/creator-console-v0.1.4.zip) · [使用说明](docs/使用说明.md) · [架构](docs/00-产品与技术框架.md)
+[**⬇ 下载最新公开版**](https://github.com/laq3416-lab/creator-console/releases/latest) · [使用说明](docs/使用说明.md) · [架构](docs/00-产品与技术框架.md)
 
 ![总览](screenshots/shot-dark.png)
 
@@ -69,7 +69,7 @@
 
 ### 非技术用户
 
-1. 下载 [`creator-console-v0.1.4.zip`](https://github.com/laq3416-lab/creator-console/releases/latest/download/creator-console-v0.1.4.zip)
+1. 下载 [最新公开版分享包](https://github.com/laq3416-lab/creator-console/releases/latest)
 2. 解压，双击 `1-安装并启动.command`（Windows 用 `.bat`）
 3. 浏览器打开 `http://127.0.0.1:3300/setup`，四步配置：
    - 填 DeepSeek API Key（[申请](https://platform.deepseek.com)，一次复盘约 ¥0.01）
